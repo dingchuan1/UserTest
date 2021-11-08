@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ding.uaa.dao.UserDao">
+    <select id="byUserid" resultType="User" parameterType="String">
+        select * from yonghu where userid=#{userid};
+    </select>
+
+    <select id="getAll" resultType="User" >
+        select * from yonghu;
+    </select>
+
+</mapper>
