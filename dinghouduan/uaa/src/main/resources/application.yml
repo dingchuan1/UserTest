@@ -16,6 +16,10 @@ spring:
     username: root
     password: DC635241.1
 
+  main:
+    #允许覆盖OAuth2放在容器中的Bean对象
+    allow-bean-definition-overriding: true
+
 #Eureka的配置 把uaa注册到Eureka里面
 eureka:
   client:

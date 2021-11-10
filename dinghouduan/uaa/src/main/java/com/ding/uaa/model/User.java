@@ -10,6 +10,7 @@ public class User implements Serializable {
 
     //主键key
     private String userid;
+    private String name;
     private String password;
     private int authority;
 
