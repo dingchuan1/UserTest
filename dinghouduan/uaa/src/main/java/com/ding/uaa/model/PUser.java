@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 //分布式实体类都要实现序列化，不然在传输时会报错
 @Data
-public class User implements Serializable {
+public class PUser implements Serializable {
 
     //主键key
     private String userid;

@@ -1,6 +1,7 @@
 package com.ding.uaa.config;
 
 import com.ding.uaa.dao.UserDao;
+import com.ding.uaa.svc.UserDetailSvc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,11 +19,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Autowired
-    private UserDao userDao;
+    private UserDetailSvc userDetailSvc;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception{
-        auth.userDetailsService(userDao).passwordEncoder(passwordEncoder());
+        auth.userDetailsService(userDetailSvc).passwordEncoder(passwordEncoder());
     }
 
     //AuthenticationManager对象在OAuth2认证服务中要使用，提前放入IOC容器中
