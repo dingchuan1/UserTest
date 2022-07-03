@@ -20,6 +20,11 @@
                 return
             }
         }
+
+        //考虑中：用不用Spring cloud gateway网关配置
+        var loginJson = {'User':user,'Password':password};
+        Action(loginJson);
+
     }
 
     function userchange(type){
