@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-public class LonginControl {
+public class LonginControl{
 
-    @RequestMapping(value="/Login",produces = "text/plain;charset=UTF-8",method = RequestMethod.POST)
+    @RequestMapping("/Login")
     public String Longin(){
         return "登录成功";
     }
