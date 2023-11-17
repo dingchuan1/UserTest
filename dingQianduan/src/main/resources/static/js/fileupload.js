@@ -59,16 +59,43 @@ uploader.on('fileQueued', function(file) {
     md5FlagMap.set(file.name,false);//文件md5值默认没计算完成。
     var deferrde = WebUploader.Deferred();//Deferred()用于监控异步计算文件md5值这个异步操作的执行状态。
     // 在文件列表中添加文件信息。
-    var $list = $('#fileList');
-    var $li = $('<div id="'+ file.id +'" class="file-li" onclick="fileClick(file.id)"><span style="display: inline-block;width: 59%;height:19px;overflow: hidden;">' + file.name
-        + '</span><div id="uploadProgress_'+ file.id +'" style="display: inline-block;width: 40%;" class="progress-bar-li">'
-        + '<div id="uploadProgressBar_'+ file.id +'" class="progress-bar-fill-li">正在加载文件<p>0%</p></div></div></div>');
+    var $list = $('#fileList tbody');
+    var lihtml = "<tr id="+ file.id +" onclick='fileClick(file.id)' class='file-li'>" +
+        "<td data-label='文件名'>" +
+            "<div >" +
+                "<span style='overflow: hidden;'>"+file.name+"</span>" +
+            "</div>" +
+        "</td>" +
+        "<td data-label='文件信息'>" +
+            "<div>" +
+                "<span>文件大小：</span>" +
+                "<span>"+file.size+"bytes</span>" +
+            "</div>" +
+            "<div class='text-muted'>" +
+                "<span>文件最后修改日：</span>" +
+                "<span>"+file.lastModified+"</span>" +
+            "</div>" +
+        "</td>" +
+        "<td>" +
+            "<div class='progress'>" +
+                "<div id='progressBar_'+file.id class='progress-bar' sttle='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
+                    "<span >0% 以加载</span>" +
+                "</div>" +
+            "</div>" +
+        "</td>" +
+        "<td>" +
+            "<div class='btn btn-purple btn-loading'>" +
+                "撤销" +
+            "</div>" +
+        "</td>" +
+        "</tr>"
+    var $li = $(lihtml);
     $list.append($li);
     uploader.md5File(file)
         .progress(function(percentage) {
             console.log("percentage="+percentage);
-            $('#uploadProgressBar_'+ file.id).find('p').text(percentage+'%');
-            $('#uploadProgressBar_'+ file.id).css('width', percentage + '%');
+            $('#progressBar_'+ file.id).find('span').text(percentage+'% 以加载');
+            $('#progressBar_'+ file.id).css('width', percentage + '%');
         })
         .then(function (fileMd5){
             console.log("完成");
@@ -81,8 +108,9 @@ uploader.on('fileQueued', function(file) {
         });
     deferrde.done(function (name){
         md5FlagMap.set(name,true);
-        $('#uploadProgressBar_'+ file.id).css('width', '100%');
-        $('#uploadProgressBar_'+ file.id).text('文件加载完成');
+        $('#progressBar_'+ file.id).css('width', '100%');
+        $('#progressBar_'+ file.id).text('文件加载完成');
+        $('#'+ file.id +' .btn-loading').removeClass("btn-loading");
     });
     //return deferrde.promise();
 });

@@ -12,10 +12,29 @@
 <body>
 
 <div class="container-xl">
-    <div class="display-area">
-        <div id="fileList" class="queueList"></div>
+    <div class="row row-cards">
+        <div class="col-12">
+            <div class="card">
+                <div id="fileList" class="table-responsive">
+                    <table class="table table-vcenter table-mobile-md card-table">
+                        <thead>
+                            <tr>
+                                <th>文件名</th>
+                                <th>文件信息</th>
+                                <th class="w-2"></th>
+                                <th class="w-1"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
     </div>
-    <div class="buttons-area">
+        <div class="buttons-area">
             <div id="filePicker" class="button" style="display: inline-block;">选择文件</div>
             <div id="fileDle" onclick="delFile()" class="button" style="display: inline-block;">撤销文件</div>
             <div id="uploadBtn" class="button" onclick="uploadFile()" >开始上传</div>
@@ -23,10 +42,11 @@
         <div id="uploadProgress" class="progress-bar" style="display: none;">
             <div id="uploadProgressBar" class="progress-bar-fill" >正在上传文件<p>0%</p></div>
         </div>
-    </div>
-    <div class="display-area">
+        </div>
+        <div class="display-area">
 
-    </div>
+        </div>
+
     <input type="text" id="delfilelist" style="display: none;">
 </div>
 </body>
