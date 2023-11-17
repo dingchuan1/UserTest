@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>网页标题</title>
+  <link rel="stylesheet" href="./css/userindexcss.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <!-- loge背景图内容 -->
+      <img src="logo.png" alt="网站logo">
+    </div>
+    <div class="navigation">
+      <ul>
+        <!-- 导航栏内容 -->
+        <li class="active" data-index="0">首页</li>
+        <li data-index="1">产品介绍</li>
+        <li data-index="2">联系我们</li>
+      </ul>
+    </div>
+    <div class="content">
+      <div class="sidebar">
+        <!-- 次级菜单栏内容 -->
+        <div class="sub-menu active">
+          <ul>
+            <li class="active" data-index="0">公司简介</li>
+            <li data-index="1">团队介绍</li>
+            <li data-index="2">企业文化</li>
+          </ul>
+        </div>
+        <div class="sub-menu">
+          <ul>
+            <li class="active" data-index="0">产品1</li>
+            <li data-index="1">产品2</li>
+            <li data-index="2">产品3</li>
+          </ul>
+        </div>
+        <div class="sub-menu">
+          <ul>
+            <li class="active" data-index="0">联系方式</li>
+            <li data-index="1">留言板</li>
+          </ul>
+        </div>
+      </div>
+      <div class="main">
+        <!-- 右边菜单内容 -->
+        <div class="menu-content active">
+          <h1>公司简介</h1>
+          <p>我们是一家专业从事XX领域的企业，成立于XX年。公司致力于提供高品质的XX产品和服务，以满足客户的不同需求。目前，我们已经取得了很多的成就，获得了多项荣誉和认证。</p>
+        </div>
+        <div class="menu-content">
+          <h1>产品介绍</h1>
+          <p>我们的产品有：产品1、产品2、产品3等，具有以下特点：高品质、价格实惠、售后服务优秀、多样化的选择等等。</p>
+        </div>
+        <div class="menu-content">
+          <h1>联系我们</h1>
+          <p>地址：XX省XX市XX区XX街道XX号<br>
+          电话：123456789<br>
+          邮箱：info@xxx.com</p>
+        </div>
+        <div class="menu-content">
+          <h1>公司简介</h1>
+          <p>我们是一家专业从事XX领域的企业，成立于XX年。公司致力于提供高品质的XX产品和服务，以满足客户的不同需求。目前，我们已经取得了很多的成就，获得了多项荣誉和认证。</p>
+        </div>
+        <div class="menu-content">
+          <h1>团队介绍</h1>
+          <p>我们的团队由一群年轻、有抱负、有激情的人组成，我们拥有丰富的专业知识和经验，致力于服务客户，为客户提供最好的解决方案。</p>
+        </div>
+        <div class="menu-content">
+          <h1>企业文化</h1>
+          <p>我们的企业文化是“以人为本，以质量为生命”，我们注重员工培训和管理，以提高产品和服务质量。同时，我们也积极参与公益活动，回馈社会。</p>
+        </div>
+        <div class="menu-content">
+          <h1>产品1</h1>
+          <p>产品1是一种高科技产品，具有以下特点：xxxxxx。</p>
+        </div>
+        <div class="menu-content">
+          <h1>产品2</h1>
+          <p>产品2是一种高科技产品，具有以下特点：xxxxxx。</p>
+        </div>
+        <div class="menu-content">
+          <h1>产品3</h1>
+          <p>产品3是一种高科技产品，具有以下特点：xxxxxx。</p>
+        </div>
+        <div class="menu-content">
+          <h1>联系方式</h1>
+          <p>地址：XX省XX市XX区XX街道XX号<br>
+          电话：123456789<br>
+          邮箱：info@xxx.com</p>
+        </div>
+        <div class="menu-content">
+          <h1>留言板</h1>
+          <form>
+            <div>
+              <label for="name">姓名：</label>
+              <input type="text" id="name" name="name">
+            </div>
+            <div>
+              <label for="email">邮箱：</label>
+              <input type="email" id="email" name="email">
+            </div>
+            <div>
+              <label for="message">留言：</label>
+              <textarea id="message" name="message"></textarea>
+            </div>
+            <button type="submit">提交</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script src="./js/userindexjs.js"></script>
+</html>

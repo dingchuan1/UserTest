@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <file>
+        <!-- 基础地址(windows) -->
+        <location>E:\DCfile\</location>
+        <tmplocation>E:\DCtmp\</tmplocation>
+        <!-- GB -->
+        <maxSize>4096</maxSize>
+        <readOnly>true</readOnly>
+    </file>
+</config>

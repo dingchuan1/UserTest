@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" name="FileSys" content="width=device-width, initial-scale=1.0">
+    <script src="js/Jquery/jquery.min.js" type="text/javascript" ></script>
+    <script src="tabler-dev/js/tabler.min.js" type="text/javascript" ></script>
+    <link href="js/webuploader/webuploader.css" rel="stylesheet">
+    <link href="css/flieUp.css" rel="stylesheet">
+    <link rel="stylesheet" href="tabler-dev/css/tabler.min.css">
+    <title>文件处理</title>
+</head>
+<body>
+
+<div class="container-xl">
+    <div class="display-area">
+        <div id="fileList" class="queueList"></div>
+    </div>
+    <div class="buttons-area">
+            <div id="filePicker" class="button" style="display: inline-block;">选择文件</div>
+            <div id="fileDle" onclick="delFile()" class="button" style="display: inline-block;">撤销文件</div>
+            <div id="uploadBtn" class="button" onclick="uploadFile()" >开始上传</div>
+        <div class="info"></div>
+        <div id="uploadProgress" class="progress-bar" style="display: none;">
+            <div id="uploadProgressBar" class="progress-bar-fill" >正在上传文件<p>0%</p></div>
+        </div>
+    </div>
+    <div class="display-area">
+
+    </div>
+    <input type="text" id="delfilelist" style="display: none;">
+</div>
+</body>
+<script src="./js/webuploader/webuploader.js" type="text/javascript" ></script>
+<script src="./js/fileupload.js" type="text/javascript" ></script>
+</html>

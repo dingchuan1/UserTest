@@ -10,3 +10,9 @@ eureka:
     fetch-registry: false #如果为false，则表示自己为注册中心
     service-url: #监控页面
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      #spring:
+      #security:
+      # user:
+      #需要配置用户名密码，并且服务在注册到服务中心时需要密码登录，不然在服务之间通信时会报错No instances available for
+      #name: DCroot
+      #password: root
