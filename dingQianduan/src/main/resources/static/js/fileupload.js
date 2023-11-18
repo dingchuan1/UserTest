@@ -77,9 +77,19 @@ uploader.on('fileQueued', function(file) {
             "</div>" +
         "</td>" +
         "<td>" +
-            "<div class='progress'>" +
-                "<div id='progressBar_'+file.id class='progress-bar' sttle='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
-                    "<span >0% 以加载</span>" +
+            "<div>" +
+                "<span id='readfiletext_"+file.id+"'>正在读取文件...</span>" +
+            "</div>" +
+            "<div id='progress_"+file.id+"' class='progress progress-li'>" +
+                "<div id='progressBar_text_"+file.id+"' class='progress-bar-text-li'>以读取0%</div>" +
+                "<div id='progressBar_"+file.id+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
+                "</div>" +
+            "</div>" +
+        "</td>" +
+        "<td>" +
+            "<div class='progress progress-li'>" +
+                "<div id='progressBar_up_text_"+file.id+"' class='progress-bar-text-li'>0% 以加载</div>" +
+                "<div id='progressBar_up_"+file.id+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
                 "</div>" +
             "</div>" +
         "</td>" +
@@ -94,7 +104,7 @@ uploader.on('fileQueued', function(file) {
     uploader.md5File(file)
         .progress(function(percentage) {
             console.log("percentage="+percentage);
-            $('#progressBar_'+ file.id).find('span').text(percentage+'% 以加载');
+            $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
             $('#progressBar_'+ file.id).css('width', percentage + '%');
         })
         .then(function (fileMd5){
@@ -109,7 +119,15 @@ uploader.on('fileQueued', function(file) {
     deferrde.done(function (name){
         md5FlagMap.set(name,true);
         $('#progressBar_'+ file.id).css('width', '100%');
-        $('#progressBar_'+ file.id).text('文件加载完成');
+        $('#progressBar_text_'+ file.id).text('文件读取完成');
+        $('#progressBar_text_'+ file.id).css('color','white');
+        $('#readfiletext_'+ file.id).text('文件读取完成');
+        var timeoutFuns = {
+            fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
+            fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '等待上传'}
+        }
+
+        timeout2fun(timeoutFuns,3000);
         $('#'+ file.id +' .btn-loading').removeClass("btn-loading");
     });
     //return deferrde.promise();
@@ -183,6 +201,47 @@ function uploadFile() {
         uploader.upload();
     }
 
+}
+
+function settimeoutChangeText(id,text){
+    $('#'+id).text(''+text);
+}
+
+function settimeoutRemoveDot(id){
+    $('#'+id).remove();
+}
+
+//这个timeout函数返回一个Promise，这个Promise将在给定的延迟时间后解析，如果函数执行成功，Promise将解析为成功消息。如果在执行函数时抛出错误，Promise将被拒绝并解析为错误消息。
+function timeout2fun(funsobj, delay) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            try {
+                for (var key in funsobj) {
+                    if (funsobj.hasOwnProperty(key)) {
+                        var funObj = funsobj[key];
+                        var keyCount = Object.keys(funObj).length;
+                        var fun = window[funObj.funname];
+                        if (typeof fun === 'function') {
+                            switch (keyCount){
+                                case 2:
+                                    fun(funObj.value1);
+                                    break;
+                                case 3:
+                                    fun(funObj.value1,funObj.value2);
+                                    break;
+                            }
+                        }
+
+
+                    }
+                }
+
+                resolve("The function executed successfully.");
+            } catch (error) {
+                reject(new Error(error.message));
+            }
+        }, delay);
+    });
 }
 /*var uploader = WebUploader.Uploader({
     swf:'./js/webuploader/Uploader.swf',

@@ -9,32 +9,34 @@ body {
     border-radius: 16px;
     overflow: hidden;
 }
-.progress-bar-li{
-    width: 100%;
-    background-color: #f3f3f3;
-    border-radius: 13px;
-    overflow: hidden;
+.progress-li{
+    position: relative; /* 设置定位上下文 */
+    margin-top: 20px;
+    color: #93ddfd;
 }
 .progress-bar-fill {
     height: 12px;
     background-color: #4caf50;
     width: 0%; /* 修改这个百分比以改变进度条的填充比例 */
     text-align: center;
-    font-size: 10px;
+    font-size: 11px;
     color: white;
     line-height: 12px;
     border-radius: 15px;
 }
-.progress-bar-fill-li {
-    height: 10px;
-    background-color: #4caf50;
-    width: 0%; /* 修改这个百分比以改变进度条的填充比例 */
-    text-align: center;
-    font-size: 10px;
-    color: white;
-    line-height: 10px;
-    border-radius: 13px;
+.progress-bar-text-li {
+    position: absolute; /* 绝对定位 */
+    top: 1px;
+    left: 50%;
+    z-index: 2;
+    color: #943e04;
 }
+
+.progress-bar-li {
+    position: relative; /* 设置定位上下文 */
+    z-index: 1;
+}
+
 
 .resume-upload {
     margin-top: 10px;
