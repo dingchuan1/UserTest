@@ -15,6 +15,23 @@
 //Web Worker 的作用，就是为 JavaScript 创造多线程环境，允许主线程创建 Worker 线程，将一些任务分配给后者运行。在主线程运行的同时，Worker 线程在后台运行，两者互不干扰。
 
 //这里使用百度的WebUploader
+//这个必须要在uploader实例化前面
+WebUploader.Uploader.register({
+    'before-send-file':'beforeSendFile',
+    'before-send':'beforeSend'
+},{
+    beforeSendFile:function(file){
+        //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
+        var task = new $.Deferred();
+        //计算文件MD5
+
+        return $.when(task);
+    },
+    beforeSend:function(){
+
+    }
+})
+
 // 实例化WebUploader
 var uploader = WebUploader.create({
     //swf文件路径
@@ -47,7 +64,7 @@ var uploader = WebUploader.create({
     chunkRetry: true,
 
     //允许同时最大上传进程数
-    threads: 3,
+    threads: 20,
     //允许在文件传输时提前把下一个文件准备好
     prepareNextFile:true
 });
@@ -57,10 +74,13 @@ var uploader = WebUploader.create({
 var md5FlagMap = new Map();
 uploader.on('fileQueued', function(file) {
     md5FlagMap.set(file.name,false);//文件md5值默认没计算完成。
-    var deferrde = WebUploader.Deferred();//Deferred()用于监控异步计算文件md5值这个异步操作的执行状态。
+    //var deferrde = WebUploader.Deferred();//Deferred()用于监控异步计算文件md5值这个异步操作的执行状态。
     // 在文件列表中添加文件信息。
-    var $list = $('#fileList tbody');
-    var lihtml = "<tr id="+ file.id +" onclick='fileClick(file.id)' class='file-li'>" +
+    //var $list = $('#fileList tbody');
+    var list = document.getElementById("fileList").getElementsByTagName("tbody");
+    var fileId = file.id;
+    var funfileClick = "fileClick("+ fileId.toString() +")";
+    var lihtml = "<tr id='"+ fileId +"' onclick='"+funfileClick+"' class='file-li'>" +
         "<td data-label='文件名'>" +
             "<div >" +
                 "<span style='overflow: hidden;'>"+file.name+"</span>" +
@@ -78,59 +98,78 @@ uploader.on('fileQueued', function(file) {
         "</td>" +
         "<td>" +
             "<div>" +
-                "<span id='readfiletext_"+file.id+"'>正在读取文件...</span>" +
+                "<span id='readfiletext_"+fileId+"'>等待上传</span>" +
             "</div>" +
-            "<div id='progress_"+file.id+"' class='progress progress-li'>" +
-                "<div id='progressBar_text_"+file.id+"' class='progress-bar-text-li'>以读取0%</div>" +
-                "<div id='progressBar_"+file.id+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
+            "<div id='progress_"+fileId+"' class='progress progress-li' style='display: none'>" +
+                "<div id='progressBar_text_"+fileId+"' class='progress-bar-text-li'>以读取0%</div>" +
+                "<div id='progressBar_"+fileId+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
                 "</div>" +
             "</div>" +
         "</td>" +
         "<td>" +
             "<div class='progress progress-li'>" +
-                "<div id='progressBar_up_text_"+file.id+"' class='progress-bar-text-li'>0% 以加载</div>" +
-                "<div id='progressBar_up_"+file.id+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
+                "<div id='progressBar_up_text_"+fileId+"' class='progress-bar-text-li'>等待上传</div>" +
+                "<div id='progressBar_up_"+fileId+"' class='progress-bar bg-green progress-bar-li' style='width:0%' role='progressbar' aria-valuenow='0' aria-valuemin='0' aria-valuemax='100'>" +
                 "</div>" +
             "</div>" +
         "</td>" +
         "<td>" +
-            "<div class='btn btn-purple btn-loading'>" +
+            "<div id='delbtn_"+fileId+"' class='btn btn-purple ' onclick='stopPropag(event); delFileById(this);' >" +
                 "撤销" +
             "</div>" +
+            "<div id='cancelbtn_"+fileId+"' class='btn btn-purple' style='display: none' onclick='stopPropag(event);cancelUp(this);'>" +
+                "取消上传" +
+            "</div>"+
         "</td>" +
-        "</tr>"
-    var $li = $(lihtml);
-    $list.append($li);
-    uploader.md5File(file)
-        .progress(function(percentage) {
-            console.log("percentage="+percentage);
-            $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
-            $('#progressBar_'+ file.id).css('width', percentage + '%');
-        })
-        .then(function (fileMd5){
-            console.log("完成");
-            file.wholeMd5 = fileMd5;
-            file_md5 = fileMd5;
-            deferrde.resolve(file.name);//文件md5值计算完成后，更新状态为已完成，这时deferred.done()被调用。
-        })
-        .catch(function(error) {
-            console.log("Error occurred:", error);
-        });
-    deferrde.done(function (name){
-        md5FlagMap.set(name,true);
-        $('#progressBar_'+ file.id).css('width', '100%');
-        $('#progressBar_text_'+ file.id).text('文件读取完成');
-        $('#progressBar_text_'+ file.id).css('color','white');
-        $('#readfiletext_'+ file.id).text('文件读取完成');
-        var timeoutFuns = {
-            fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
-            fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '等待上传'}
-        }
+        "</tr>";
+    //var $li = $(lihtml);
+    //$list.append($li);
+    list[0].innerHTML=lihtml;
+    // uploader.md5File(file)
+    //     .progress(function(percentage) {
+    //         console.log("percentage="+percentage);
+    //         $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
+    //         $('#progressBar_'+ file.id).css('width', percentage + '%');
+    //     })
+    //     .then(function (fileMd5){
+    //         console.log("完成");
+    //         file.wholeMd5 = fileMd5;
+    //         file_md5 = fileMd5;
+    //         //deferrde.resolve(file.name);//文件md5值计算完成后，更新状态为已完成，这时deferred.done()被调用。
+    //         md5FlagMap.set(name,true);
+    //         $('#progressBar_'+ file.id).css('width', '100%');
+    //         $('#progressBar_text_'+ file.id).text('文件读取完成');
+    //         $('#progressBar_text_'+ file.id).css('color','white');
+    //         $('#readfiletext_'+ file.id).text('文件读取完成');
+    //         var timeoutFuns = {
+    //             fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
+    //             fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '等待上传'}
+    //         }
+    //         timeout2fun(timeoutFuns,3000);
+    //         $('#'+ file.id +' .btn-loading').removeClass("btn-loading");
+    //     })
+    //     .catch(function(error) {
+    //         console.log("Error occurred:", error);
+    //     });
+        // deferrde.done(function (name){
+        //     md5FlagMap.set(name,true);
+        //     $('#progressBar_'+ file.id).css('width', '100%');
+        //     $('#progressBar_text_'+ file.id).text('文件读取完成');
+        //     $('#progressBar_text_'+ file.id).css('color','white');
+        //     $('#readfiletext_'+ file.id).text('文件读取完成');
+        //     var timeoutFuns = {
+        //         fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
+        //         fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '等待上传'}
+        //     }
+        //     timeout2fun(timeoutFuns,3000);
+        //     $('#'+ file.id +' .btn-loading').removeClass("btn-loading");
+        //     var delbtnByfileId = document.getElementById("delbtn_"+file.id);
+        //     //$('#delbtn_'+ file.id).on('click',delFileById(file.id+'',delbtnByfileId,true));
+        //     delbtnByfileId.addEventListener('click',delFileById(file.id+'',delbtnByfileId,true));
+        // });
 
-        timeout2fun(timeoutFuns,3000);
-        $('#'+ file.id +' .btn-loading').removeClass("btn-loading");
-    });
     //return deferrde.promise();
+
 });
 //uploadProgress显示进度条
 uploader.on('uploadProgress', function(file, percentage) {
@@ -149,7 +188,7 @@ uploader.on('uploadBeforeSend',function(block,data){
     var file = block.file;
     //data可以携带参数到后端
     data.name = file.name;//文件名字
-    data.md5Value = file.wholeMd5;//文件整体的md5值
+    data.md5Value = file.md5;//文件整体的md5值
     data.start = block.start;//分片数据块在整体文件的开始位置
     data.end = block.end;//分片数据块在整体文件的结束位置
     data.chunk = block.chunk;//分片的索引位置
@@ -175,8 +214,30 @@ function fileClick(fileid){
     }
 
 }
+/*
+    obj:传入this
+    isbubble:是否阻止冒泡事件，true阻止，false不阻止
+ */
+function delFileById(t){
+    // 获取元素的ID
+    var id = t.id;
+    // 截取第一个"_"以后的字符串
+    var index = id.indexOf('_');
+    if (index !== -1) {
+        var fileId = id.slice(index + 1);
+    } else {
+        console.log("No underscore found.");
+    }
+    var flieTr = document.getElementById(fileId+"");
+    flieTr.parentNode.removeChild(flieTr);
+    uploader.removeFile(fileId,true);
+}
 
-function delFile(){
+function stopPropag(e){
+    e.stopPropagation();
+}
+
+function delSelectFile(){
     var delfilelistobj = $("#delfilelist");
     var elements = delfilelistobj.val().split(',');
     $.each(elements, function(index, value) {
@@ -186,25 +247,91 @@ function delFile(){
 }
 
 function uploadFile() {
+    uploader.md5File(file).progress(percentage => {
+        console.log("percentage="+percentage);
+        $('#progress_'+ file.id).css('display','block');
+        $('#readfiletext_'+ file.id).text('正在读取文件');
+        $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
+        $('#progressBar_'+ file.id).css('width', percentage + '%');
+    }).then(function (fileMd5){
+        console.log("完成");
+        file.md5 = fileMd5;
+
+        $('#progressBar_'+ file.id).css('width', '100%');
+        $('#progressBar_text_'+ file.id).text('文件读取完成');
+        $('#progressBar_text_'+ file.id).css('color','white');
+        $('#readfiletext_'+ file.id).text('文件读取完成');
+        var timeoutFuns = {
+            fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
+            fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '上传中...'},
+            fun3 : {funname : 'settimeoutChangeBtn',value1 : 'delbtn_'+ file.id,value2 : 'cancelbtn_'+ file.id}
+        }
+        timeout2fun(timeoutFuns,3000);
+        //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
+        //服务器应该将传输的分片文件的md5保存，
+        // if(retrunstatus == 101){
+        //     //分片文件在服务器中不存在，就是正常流程
+        // }else if(retrunstatus == 100){
+        //     //分片文件在服务器中已存在，标识上传成功并跳过上传过程
+        //     uploader.skipFile(file);
+        //     file.pass = true;
+        // }else if(retrunstatus == 102){
+        //     //部分以上传，但是差几个分片
+        //     file.missChunks = data.xxxx;
+        // }
+    });
     //  md5FlagMap里面存储有文件md5计算的状态。
     // 同时上传多个文件时，上传前要判断一下以添加的文件md5计算完成没有。
     //如果有未计算完成的，则继续等待计算结果
     //这个可以优化为，那个文件md5计算完成就上传哪个。
-    var uploadFloag = true;
-    md5FlagMap.forEach(function(value,key){
-        if(!value){
-            uploadFloag = false;
-            alert("文件加载中...");
-        }
-    });
-    if (uploadFloag){
+    // var uploadFloag = true;
+    // md5FlagMap.forEach(function(value,key){
+    //     if(!value){
+    //         uploadFloag = false;
+    //         alert("文件加载中...");
+    //     }
+    // });
+    // if (uploadFloag){
         uploader.upload();
+    // }
+
+}
+
+//为元素添加事件
+function addEventById(id,type,funcname,arm){
+    var eventById = document.getElementById(id+"");
+    var fun = window[funcname];
+    var keyCount = arm.length;
+    if (typeof fun === 'function') {
+        switch (keyCount){
+            case 0:
+                eventById.addEventListener(type+"",fun());
+                break;
+            case 1:
+                eventById.addEventListener(type+"",fun(arm[0]));
+                break;
+            case 2:
+                eventById.addEventListener(type+"",fun(arm[0],arm[1]));
+                break;
+            case 3:
+                eventById.addEventListener(type+"",fun(arm[0],arm[1],arm[2]));
+                break;
+            case 4:
+                eventById.addEventListener(type+"",fun(arm[0],arm[1],arm[2],arm[3]));
+                break;
+        }
+
     }
 
 }
 
 function settimeoutChangeText(id,text){
     $('#'+id).text(''+text);
+}
+
+function settimeoutChangeBtn(btn1,btn2){
+    $('#'+btn1).css('display','none');
+    $('#'+btn2).css('display','block');
 }
 
 function settimeoutRemoveDot(id){
