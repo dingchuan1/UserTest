@@ -24,7 +24,57 @@ WebUploader.Uploader.register({
         //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
         var task = new $.Deferred();
         //计算文件MD5
+        uploader.md5File(file).progress(percentage => {
+            console.log("percentage="+percentage * 100);
+            $('#progress_'+ file.id).css('display','block');
+            $('#readfiletext_'+ file.id).text('正在读取文件');
+            $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
+            $('#progressBar_'+ file.id).css('width', percentage + '%');
+        }).then(function (fileMd5){
+            console.log("完成");
+            file.md5 = fileMd5;
 
+            $('#progressBar_'+ file.id).css('width', '100%');
+            $('#progressBar_text_'+ file.id).text('文件读取完成');
+            $('#progressBar_text_'+ file.id).css('color','white');
+            $('#readfiletext_'+ file.id).text('文件读取完成');
+            var timeoutFuns = {
+                fun1 : {funname:'settimeoutNoDisplayDot',value1:'progress_'+ file.id,value2:'delbtn_'+ file.id},
+                fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '上传中...'},
+                fun3 : {funname : 'settimeoutInlineBlockDisplayDot',value1 : 'cancelbtn_'+ file.id,value2:'stopupbtn_'+ file.id}
+            }
+            timeout2fun(timeoutFuns,3000);
+            //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
+            $.ajax({
+                url: 'http://localhost:8080/CheckFile',
+                type: "post",
+                data: {'fileName':file.name,'fileMd5':file.md5},
+                success: function (data) {
+                    let info=JSON.parse(data);
+                    if(info["code"]=="200"){
+                        document.cookie = info["data"].tokenName+"="+info["data"].tokenValue;
+                        let page = checkPerm(info["msg"]);
+                        console.log(page);
+                        window.location.href="http://localhost:8080/"+page+".html?servicesName="+page;
+                    }
+                    console.log(data);
+                },
+                error: function (data) {
+                    rel.push(data);
+                }
+            })
+            //服务器应该将传输的分片文件的md5保存，
+            // if(retrunstatus == 101){
+            //     //分片文件在服务器中不存在，就是正常流程
+            // }else if(retrunstatus == 100){
+            //     //分片文件在服务器中已存在，标识上传成功并跳过上传过程
+            //     uploader.skipFile(file);
+            //     file.pass = true;
+            // }else if(retrunstatus == 102){
+            //     //部分以上传，但是差几个分片
+            //     file.missChunks = data.xxxx;
+            // }
+        });
         return $.when(task);
     },
     beforeSend:function(){
@@ -72,14 +122,16 @@ var uploader = WebUploader.create({
 //当文件被添加的时候，就会计算md5值，计算过程是异步的，且文件越大计算越久。
 //md5FlagMap用于存储文件md5计算完成的标志位；多个文件时，分别设置标志位，key是文件名，value是true或false
 var md5FlagMap = new Map();
+
 uploader.on('fileQueued', function(file) {
     md5FlagMap.set(file.name,false);//文件md5值默认没计算完成。
     //var deferrde = WebUploader.Deferred();//Deferred()用于监控异步计算文件md5值这个异步操作的执行状态。
     // 在文件列表中添加文件信息。
-    //var $list = $('#fileList tbody');
-    var list = document.getElementById("fileList").getElementsByTagName("tbody");
+    var $list = $('#fileList tbody');
+    //var list = document.getElementById("fileList").getElementsByTagName("tbody");
     var fileId = file.id;
     var funfileClick = "fileClick("+ fileId.toString() +")";
+    var fileSize = displayFileSize(file.size);
     var lihtml = "<tr id='"+ fileId +"' onclick='"+funfileClick+"' class='file-li'>" +
         "<td data-label='文件名'>" +
             "<div >" +
@@ -89,7 +141,7 @@ uploader.on('fileQueued', function(file) {
         "<td data-label='文件信息'>" +
             "<div>" +
                 "<span>文件大小：</span>" +
-                "<span>"+file.size+"bytes</span>" +
+                "<span>"+fileSize+"</span>" +
             "</div>" +
             "<div class='text-muted'>" +
                 "<span>文件最后修改日：</span>" +
@@ -114,17 +166,28 @@ uploader.on('fileQueued', function(file) {
             "</div>" +
         "</td>" +
         "<td>" +
-            "<div id='delbtn_"+fileId+"' class='btn btn-purple ' onclick='stopPropag(event); delFileById(this);' >" +
+            "<div id='delbtn_"+fileId+"' style='width: 70px;' class='btn btn-purple ' onclick='stopPropag(event); delFileById(this);' >" +
                 "撤销" +
             "</div>" +
-            "<div id='cancelbtn_"+fileId+"' class='btn btn-purple' style='display: none' onclick='stopPropag(event);cancelUp(this);'>" +
+            "<div id='stopupbtn_"+fileId+"' class='btn btn-purple' typeflag='stop' style='width: 80px;display: none' onclick='stopPropag(event);stopUp(this);'>" +
+                "暂停上传" +
+            "</div>"+
+            "<div id='cancelbtn_"+fileId+"' class='btn btn-purple' typeflag='cancel' style='margin-left:10px;width: 80px;display: none' onclick='stopPropag(event);cancelUp(this);'>" +
                 "取消上传" +
             "</div>"+
         "</td>" +
         "</tr>";
-    //var $li = $(lihtml);
-    //$list.append($li);
-    list[0].innerHTML=lihtml;
+    var $li = $(lihtml);
+    $list.append($li);
+    //list[0].innerHTML=lihtml;
+    // let hash = CryptoJS.MD5("tewstdyfhfttfhvyfufyfdryhg");
+    // let progress = 0;
+    // hash.on('data', (data) => {
+    //     // data.loaded 是已经处理的数据长度
+    //     // data.total 是总数据长度
+    //     progress = Math.round((data.loaded / data.total) * 100);
+    //     console.log("progress"+progress);
+    // });
     // uploader.md5File(file)
     //     .progress(function(percentage) {
     //         console.log("percentage="+percentage);
@@ -179,9 +242,6 @@ uploader.on('uploadProgress', function(file, percentage) {
     $('#uploadProgressBar').find('p').text(percentage+'%');
 });
 
-// uploader.addButton({
-//     id:"#fileDle"
-// })
 
 //uploadBeforeSend，在分片模式下，当文件的分块在发送前触发
 uploader.on('uploadBeforeSend',function(block,data){
@@ -216,23 +276,15 @@ function fileClick(fileid){
 }
 /*
     obj:传入this
-    isbubble:是否阻止冒泡事件，true阻止，false不阻止
+
  */
 function delFileById(t){
-    // 获取元素的ID
-    var id = t.id;
-    // 截取第一个"_"以后的字符串
-    var index = id.indexOf('_');
-    if (index !== -1) {
-        var fileId = id.slice(index + 1);
-    } else {
-        console.log("No underscore found.");
-    }
-    var flieTr = document.getElementById(fileId+"");
+    var fileid = findFileIdByDom(t);
+    var flieTr = document.getElementById(fileid+"");
     flieTr.parentNode.removeChild(flieTr);
     uploader.removeFile(fileId,true);
 }
-
+//阻止冒泡
 function stopPropag(e){
     e.stopPropagation();
 }
@@ -247,39 +299,7 @@ function delSelectFile(){
 }
 
 function uploadFile() {
-    uploader.md5File(file).progress(percentage => {
-        console.log("percentage="+percentage);
-        $('#progress_'+ file.id).css('display','block');
-        $('#readfiletext_'+ file.id).text('正在读取文件');
-        $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
-        $('#progressBar_'+ file.id).css('width', percentage + '%');
-    }).then(function (fileMd5){
-        console.log("完成");
-        file.md5 = fileMd5;
 
-        $('#progressBar_'+ file.id).css('width', '100%');
-        $('#progressBar_text_'+ file.id).text('文件读取完成');
-        $('#progressBar_text_'+ file.id).css('color','white');
-        $('#readfiletext_'+ file.id).text('文件读取完成');
-        var timeoutFuns = {
-            fun1 : {funname:'settimeoutRemoveDot',value1:'progress_'+ file.id},
-            fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '上传中...'},
-            fun3 : {funname : 'settimeoutChangeBtn',value1 : 'delbtn_'+ file.id,value2 : 'cancelbtn_'+ file.id}
-        }
-        timeout2fun(timeoutFuns,3000);
-        //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
-        //服务器应该将传输的分片文件的md5保存，
-        // if(retrunstatus == 101){
-        //     //分片文件在服务器中不存在，就是正常流程
-        // }else if(retrunstatus == 100){
-        //     //分片文件在服务器中已存在，标识上传成功并跳过上传过程
-        //     uploader.skipFile(file);
-        //     file.pass = true;
-        // }else if(retrunstatus == 102){
-        //     //部分以上传，但是差几个分片
-        //     file.missChunks = data.xxxx;
-        // }
-    });
     //  md5FlagMap里面存储有文件md5计算的状态。
     // 同时上传多个文件时，上传前要判断一下以添加的文件md5计算完成没有。
     //如果有未计算完成的，则继续等待计算结果
@@ -295,6 +315,71 @@ function uploadFile() {
         uploader.upload();
     // }
 
+}
+
+//文件大小的单位转换
+function displayFileSize(fileSize) {
+    const units = ['bytes', 'KB', 'MB', 'GB'];
+    let i = 0;
+    while (fileSize >= 1024 && i < 3) {
+        fileSize /= 1024;
+        i++;
+    }
+    return fileSize.toFixed(1) + ' ' + units[i];
+}
+
+
+
+function cancelUp(t){
+    var fileid = findFileIdByDom(t);
+    var flag = t.getAttribute('typeflag');
+    if(flag == "cancel"){
+        uploader.cancelFile(fileid);
+        settimeoutInlineBlockDisplayDot("delbtn_"+fileid);
+        settimeoutNoDisplayDot("stopupbtn_"+fileid);
+        t.setAttribute('typeflag','GoOn');
+        $(t).text("重新上传");
+    }
+    if(flag == "GoOn"){
+        uploader.upload(fileid);
+        settimeoutInlineBlockDisplayDot("stopupbtn_"+fileid);
+        settimeoutNoDisplayDot("delbtn_"+fileid);
+        t.setAttribute('typeflag','cancel');
+        $(t).text("取消上传");
+    }
+
+
+
+}
+
+function stopUp(t){
+    var fileid = findFileIdByDom(t);
+    var flag = t.getAttribute('typeflag');
+    if(flag == "stop"){
+        uploader.stop(fileid);
+        t.setAttribute('typeflag','GoOn');
+        $(t).text("继续上传");
+    }
+    if(flag == "GoOn"){
+        uploader.upload(fileid);
+        t.setAttribute('typeflag','stop');
+        $(t).text("暂停上传");
+    }
+
+}
+
+function findFileIdByDom(t){
+    // 获取元素的ID
+    var id = t.id;
+    // 截取第一个"_"以后的字符串
+    var index = id.indexOf('_');
+    if (index !== -1) {
+        var fileId = id.slice(index + 1);
+    } else {
+        var fileId = "";
+        console.log("No underscore found.");
+    }
+    return fileId;
 }
 
 //为元素添加事件
@@ -329,13 +414,27 @@ function settimeoutChangeText(id,text){
     $('#'+id).text(''+text);
 }
 
-function settimeoutChangeBtn(btn1,btn2){
+//不够解耦暂时不用
+function settimeoutChangeBtn(btn1,btn2,btn3){
     $('#'+btn1).css('display','none');
     $('#'+btn2).css('display','block');
+    $('#'+btn3).css('display','block');
 }
 
-function settimeoutRemoveDot(id){
-    $('#'+id).remove();
+function settimeoutNoDisplayDot(...id){
+    for (let i = 0; i < id.length; i++) {
+        $('#'+id[i]).css('display','none');
+    }
+}
+function settimeoutDisplayDot(...id){
+    for (let i = 0; i < id.length; i++) {
+        $('#'+id[i]).css('display','block');
+    }
+}
+function settimeoutInlineBlockDisplayDot(...id){
+    for (let i = 0; i < id.length; i++) {
+        $('#'+id[i]).css('display','inline-block');
+    }
 }
 
 //这个timeout函数返回一个Promise，这个Promise将在给定的延迟时间后解析，如果函数执行成功，Promise将解析为成功消息。如果在执行函数时抛出错误，Promise将被拒绝并解析为错误消息。
@@ -356,6 +455,12 @@ function timeout2fun(funsobj, delay) {
                                 case 3:
                                     fun(funObj.value1,funObj.value2);
                                     break;
+                                case 4:
+                                    fun(funObj.value1,funObj.value2,funObj.value3);
+                                    break;
+                                case 5:
+                                    fun(funObj.value1,funObj.value2,funObj.value3,funObj.value4);
+                                    break;
                             }
                         }
 
@@ -370,77 +475,4 @@ function timeout2fun(funsobj, delay) {
         }, delay);
     });
 }
-/*var uploader = WebUploader.Uploader({
-    swf:'./js/webuploader/Uploader.swf',
-    dnd:'',//指定Drag And Drop拖拽的容器，如果不指定，则不启动。
-    server: 'http://localhost:8080/upload',// 文件接收服务端。
-    multiple: true, // 选择多个
-    chunked:true,//是否要分片处理大文件上传。
-    prepareNextFile:true,//是否允许在文件传输时提前把下一个文件准备好
-    chunkSize:5 * 1024 * 1024,//如果要分片，分多大一片？ 默认大小为5M.
-    chunkRetry:3,//如果某个分片由于网络问题出错，允许自动重传多少次？
-    threads:5,//上传并发数。允许同时最大上传进程数。默认为3
-    fileNumLimit:10,//验证文件总数量, 超出则不允许加入队列
-    fileSizeLimit:500 * 1024 * 1024 * 1024,//验证文件总大小是否超出限制, 超出则不允许加入队列。500G
-    fileSingleSizeLimit:100 * 1024 * 1024 * 1024//验证单个文件大小是否超出限制, 超出则不允许加入队列。100G
-});
-// 绑定点击选择文件按钮的事件。
-document.getElementById('filePicker').addEventListener('click', function() {
-    uploader.click();
-});
 
-var fileInput = document.getElementById('file-input');
-//进度条
-var progressBar = document.getElementById('progress-bar-fill');
-// 分片大小，这里为2MB
-var uploadSize = 2048 * 2048;
-// 当前上传的分片索引
-var uploadIndex = 0;
-// 总分片数
-var uploadTotal = 0;
-var uploadData;
-function uploadFile() {
-    var files = fileInput.files;
-    if (files.length == 0) {
-        alert('请选择文件');
-        return;
-    }
-
-    uploadData = new Blob(files);
-    uploadTotal = Math.ceil(uploadData.size / uploadSize);
-    uploadIndex = 0;
-
-    uploadNext();
-}
-
-function uploadNext() {
-    var start = uploadIndex * uploadSize;
-    var end = Math.min(uploadData.size, start + uploadSize);
-
-    var form = new FormData();
-    form.append('data', uploadData.slice(start, end));
-    form.append('index', uploadIndex);
-    form.append('total', uploadTotal);
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'http://localhost:8080/upload', true);
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-            var percent = (e.loaded / e.total) * 100;
-            progressBar.style.width = percent + '%';
-        }
-    };
-    xhr.onload = function() {
-        if (xhr.status == 200) {
-            uploadIndex++;
-            if (uploadIndex < uploadTotal) {
-                uploadNext();
-            } else {
-                alert('上传完成');
-            }
-        } else {
-            alert('上传失败');
-        }
-    };
-    xhr.send(form);
-}*/
