@@ -45,24 +45,24 @@ WebUploader.Uploader.register({
             }
             timeout2fun(timeoutFuns,3000);
             //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
-            $.ajax({
-                url: 'http://localhost:8080/CheckFile',
-                type: "post",
-                data: {'fileName':file.name,'fileMd5':file.md5},
-                success: function (data) {
-                    let info=JSON.parse(data);
-                    if(info["code"]=="200"){
-                        document.cookie = info["data"].tokenName+"="+info["data"].tokenValue;
-                        let page = checkPerm(info["msg"]);
-                        console.log(page);
-                        window.location.href="http://localhost:8080/"+page+".html?servicesName="+page;
-                    }
-                    console.log(data);
-                },
-                error: function (data) {
-                    rel.push(data);
-                }
-            })
+            // $.ajax({
+            //     url: 'http://localhost:8080/CheckFileState',
+            //     type: "post",
+            //     data: {'fileName':file.name,'fileMd5':file.md5},
+            //     success: function (data) {
+            //         let info=JSON.parse(data);
+            //         if(info["code"]=="200"){
+            //             document.cookie = info["data"].tokenName+"="+info["data"].tokenValue;
+            //             let page = checkPerm(info["msg"]);
+            //             console.log(page);
+            //             window.location.href="http://localhost:8080/"+page+".html?servicesName="+page;
+            //         }
+            //         console.log(data);
+            //     },
+            //     error: function (data) {
+            //         rel.push(data);
+            //     }
+            // })
             //服务器应该将传输的分片文件的md5保存，
             // if(retrunstatus == 101){
             //     //分片文件在服务器中不存在，就是正常流程
@@ -116,7 +116,10 @@ var uploader = WebUploader.create({
     //允许同时最大上传进程数
     threads: 20,
     //允许在文件传输时提前把下一个文件准备好
-    prepareNextFile:true
+    prepareNextFile:true,
+    //在WebUploader配置中记得加上compress：false,resize: false,否则组件在分片时会默认将分片压缩，导致总文件的md5与合并后的md5不一致
+    compress:false,//不启用压缩
+    resize:false//尺寸不变
 });
 //fileQueued,当有文件添加进来的时候
 //当文件被添加的时候，就会计算md5值，计算过程是异步的，且文件越大计算越久。
@@ -145,7 +148,7 @@ uploader.on('fileQueued', function(file) {
             "</div>" +
             "<div class='text-muted'>" +
                 "<span>文件最后修改日：</span>" +
-                "<span>"+file.lastModified+"</span>" +
+                "<span>"+file.lastModifiedDate+"</span>" +
             "</div>" +
         "</td>" +
         "<td>" +

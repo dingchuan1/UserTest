@@ -1,5 +1,9 @@
 package com.ding.filesys.fileutil;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.FileUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -12,6 +16,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class SysFileUtils {
@@ -67,13 +72,161 @@ public class SysFileUtils {
         return xmlMap;
     }
 
+    public String getConfigFilePath(String userid,String type){
+        Map<String,Object> xmlMap = SysFileUtils.redFileXml();
+        String configFilePath = "";
+        if("location".equals(type)){
+            configFilePath = xmlMap.get("location")+"\\"+userid+"\\"+userid+"Fileinfo"+"\\"+"filejson.txt";
+        }
+        if("tmplocation".equals(type)){
+            configFilePath = xmlMap.get("tmplocation")+"\\"+userid+"\\"+userid+"Fileinfo"+"\\"+"filejson.txt";
+        }
+        if("".equals(configFilePath)){
+            return "ERR：读取配置文件错误。后面同一到报错页面";
+        }else {
+            return configFilePath;
+        }
+
+    }
+
+    //统计文件分片的个数
+    public int getCommitChunks(String configFilePath,String filename,String filepath){
+        int count = 0;
+        JsonNode rootNode = null;
+        File configFile = new File(configFilePath);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            rootNode = objectMapper.readTree(configFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Iterator<JsonNode> elements = rootNode.elements();
+        while (elements.hasNext()) {
+            ObjectNode object = (ObjectNode) elements.next();
+            Map<String, JsonNode> fields = (Map<String, JsonNode>) object.fields();
+            for (Map.Entry<String, JsonNode> entry : fields.entrySet()) {
+                if(entry.getKey().startsWith(filename+"_"+filepath)){
+                    count++;
+                }
+            }
+
+        }
+        return  count;
+    }
+
+    //设置用户储存文件信息
+    public void setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
+        String configFilePath = getConfigFilePath(userid,type);
+        //ObjectMapper的内存开销很大
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> jsonData = new HashMap<>();
+        Map<String, String> jsonData1 = new HashMap<>();
+        File configFile = new File(configFilePath);
+
+        String sameFile = checkFileExit(configFilePath,fileName,filePath,fileMd5);
+        if("0".equals(sameFile)){
+            jsonData1.put("filePath", filePath);
+            jsonData1.put("fileMd5", fileMd5);
+            jsonData1.put("chunk", chunk+"");
+            jsonData1.put("chunks", chunks+"");
+            try {
+                jsonData.put(fileName, objectMapper.writeValueAsString(jsonData1));
+                String jsonString = objectMapper.writeValueAsString(jsonData);
+                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
+                writer.write(jsonString);
+                writer.write(System.lineSeparator()); // 可选，添加换行符
+                writer.close();
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+    }
+
+    //检查文件md5值是否相同
+//    public String checkFileMd5(String configFilePath,String fileName,String filePath,String filemd5){
+//        JsonNode rootNode;
+//        File configFile = new File(configFilePath);
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        boolean md5code = false;
+//        try {
+//            rootNode = objectMapper.readTree(configFile);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return "ERR:创建json对象出错";
+//        }
+//        Iterator<JsonNode> elements = rootNode.elements();
+//        while (elements.hasNext()) {
+//            ObjectNode object = (ObjectNode) elements.next();
+//            if(object.has(fileName)){
+//                if(filePath.equals(object.get(fileName).get("filePath").asText())){
+//                    md5code = true;
+//                }
+//            }
+//        }
+//
+//    }
+
+    //检查总文件是否存在
+    /*
+        pram:检查总文件是否存在
+        retrun:0,不存在
+               1,存在
+               2,存在但md5值不同
+     */
+    public String checkFileExit(String configFilePath,String fileName,String filePath,String filemd5){
+        JsonNode rootNode;
+        File configFile = new File(configFilePath);
+        String sameFile = "0";
+        if(!configFile.exists()){
+            return "ERR:用户文件信息不存在。";
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            rootNode = objectMapper.readTree(configFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "ERR:创建json对象出错";
+        }
+        Iterator<JsonNode> elements = rootNode.elements();
+        while (elements.hasNext()) {
+            ObjectNode object = (ObjectNode) elements.next();
+            if(object.has(fileName)){
+                if(filePath.equals(object.get(fileName).get("filePath").asText())){
+                    sameFile = "1";
+                    if(!filemd5.equals(object.get(fileName).get("fileMd5").asText())){
+                        sameFile = "2";
+                    }
+
+                }
+            }
+        }
+        return sameFile;
+
+    }
+
+
+
+    //变更用户储存文件信息（chunk）
+    public void changeFileMesChunk(String userid,int chunk){
+        Map<String,Object> xmlMap = SysFileUtils.redFileXml();
+        String configFilePath = xmlMap.get("location")+"\\"+userid+"\\"+userid+"Fileinfo"+"\\"+"filejson.txt";
+        //ObjectMapper的内存开销很大
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode;
+
+    }
+
     //获取上传文件的大小
 
 
     //获取用户剩余的空间大小
 
     //处理上传的分片文件
-    public String saveChunkFile(File file,int chunk,String fileName,String tmpfilePath){
+    public String saveChunkFile(File file,int chunk,String fileName,String tmpfilePath,String filepath){
         //检查tmp文件夹是否存在，不存在就创建
         File tmpUploadDir = new File(tmpfilePath);
         if(!tmpUploadDir.exists()){
@@ -81,7 +234,7 @@ public class SysFileUtils {
         }
 
         //将当前分片存储到临时文件中
-        File tmpFile =  new File(tmpfilePath + "/" + fileName + "_" + chunk);
+        File tmpFile =  new File(tmpfilePath + "/" + fileName + "_" + filepath +"_" + chunk);
         try (FileInputStream fis = new FileInputStream(file);
              FileOutputStream fos = new FileOutputStream(tmpFile)) {
 
