@@ -113,6 +113,9 @@ public class UserController {
         //假设当前用户的容量(GB),暂时写死
         String userMaxSize = "50";
         String servicesName = request.getParameter("servicesName");
+        String filemd5Value= request.getParameter("filemd5Value");
+        String blockmd5Value= request.getParameter("blockmd5Value");
+        String filepath= request.getParameter("filepath");
         String filename= request.getParameter("filename");
         String start= request.getParameter("start");
         String end= request.getParameter("end");
@@ -127,12 +130,40 @@ public class UserController {
             if(StpUtil.hasRole(permTable.getRoleKey(servicesName))){
                 res = restTemplate.postForObject(fileurl+"filesys/testupload?id="+StpUtil.getLoginId()+"&usersize="+userMaxSize
                         +"&filename="+filename+"&start="+start+"&end="+end
-                        +"&chunk="+chunk+"&chunks="+chunks,file, String.class);
+                        +"&chunk="+chunk+"&chunks="+chunks+"&filemd5Value="+filemd5Value
+                        +"&blockmd5Value="+blockmd5Value+"&filepath="+filepath,file, String.class);
             }
         }
 
 
         return res;
+    }
+    //用全局拦截器验证登录通过后，重定向请求到fileState服务
+    @RequestMapping(value = "/getFileState",method = RequestMethod.GET)
+    public String checkFileState(HttpServletRequest request){
+        InstanceInfo fileinfo = eurekaClient.getNextServerFromEureka("filesys_server",false);
+        String fileurl = fileinfo.getHomePageUrl();
+        if(fileurl.equals("")){
+            return "500";
+        }
+        String res = "500";
+        String servicesName = request.getParameter("servicesName");
+        String filename= request.getParameter("filename");
+        String filemd5= request.getParameter("filemd5");
+        String filepath= request.getParameter("filepath");
+        String checktype= request.getParameter("checktype");
+        System.out.println("checkFileState_servicesName="+servicesName);
+        System.out.println("checkFileState_filename="+filename);
+        System.out.println("checkFileState_filemd5="+filemd5);
+        System.out.println("checkFileState_filepath="+filepath);
+        if(StpUtil.isLogin()) {
+            if (StpUtil.hasRole(permTable.getRoleKey(servicesName))) {
+                res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                        +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype, String.class);
+            }
+        }
+        return res;
+
     }
 
     // 全局异常拦截（拦截项目中的NotLoginException异常）

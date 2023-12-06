@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.FileUtils;
-import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -14,10 +13,12 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SysFileUtils {
 
@@ -89,6 +90,23 @@ public class SysFileUtils {
 
     }
 
+    public String getSaveFilePath(String userid,String type){
+        Map<String,Object> xmlMap = SysFileUtils.redFileXml();
+        String configFilePath = "";
+        if("location".equals(type)){
+            configFilePath = xmlMap.get("location")+"\\"+userid;
+        }
+        if("tmplocation".equals(type)){
+            configFilePath = xmlMap.get("tmplocation")+"\\"+userid;
+        }
+        if("".equals(configFilePath)){
+            return "ERR：读取配置文件错误。后面同一到报错页面";
+        }else {
+            return configFilePath;
+        }
+
+    }
+
     //统计文件分片的个数
     public int getCommitChunks(String configFilePath,String filename,String filepath){
         int count = 0;
@@ -115,14 +133,14 @@ public class SysFileUtils {
     }
 
     //设置用户储存文件信息
-    public void setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
+    public String setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
+        String returncode = "";
         String configFilePath = getConfigFilePath(userid,type);
         //ObjectMapper的内存开销很大
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> jsonData = new HashMap<>();
         Map<String, String> jsonData1 = new HashMap<>();
         File configFile = new File(configFilePath);
-
         String sameFile = checkFileExit(configFilePath,fileName,filePath,fileMd5);
         if("0".equals(sameFile)){
             jsonData1.put("filePath", filePath);
@@ -130,20 +148,30 @@ public class SysFileUtils {
             jsonData1.put("chunk", chunk+"");
             jsonData1.put("chunks", chunks+"");
             try {
+                List<String> lines = FileUtils.readLines(configFile, "UTF-8");
+
                 jsonData.put(fileName, objectMapper.writeValueAsString(jsonData1));
                 String jsonString = objectMapper.writeValueAsString(jsonData);
-                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
-                writer.write(jsonString);
-                writer.write(System.lineSeparator()); // 可选，添加换行符
-                writer.close();
+                if(lines.size()==2){
+                    lines.set(lines.size() - 1, jsonString+"\n]");
+                } else if (lines.size()>2) {
+                    lines.set(lines.size() - 1, ","+jsonString+"\n]");
+                }
+                FileUtils.writeLines(configFile, "UTF-8", lines);
+//                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
+//                writer.write(jsonString+",");
+//                writer.write(System.lineSeparator()); // 可选，添加换行符
+//                writer.close();
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
+            returncode = "0";
+        }else {
+            returncode = "-1";
         }
+        return returncode;
     }
 
     //检查文件md5值是否相同
@@ -226,15 +254,17 @@ public class SysFileUtils {
     //获取用户剩余的空间大小
 
     //处理上传的分片文件
-    public String saveChunkFile(File file,int chunk,String fileName,String tmpfilePath,String filepath){
+    public String saveChunkFile(File file,int chunk,String fileName,String userId,String filepath){
+        String tmpfilePath = getSaveFilePath(userId,"tmplocation");
+        String truetmpfilePath = removeStr(filepath);
         //检查tmp文件夹是否存在，不存在就创建
-        File tmpUploadDir = new File(tmpfilePath);
+        File tmpUploadDir = new File(truetmpfilePath);
         if(!tmpUploadDir.exists()){
             tmpUploadDir.mkdirs();
         }
 
         //将当前分片存储到临时文件中
-        File tmpFile =  new File(tmpfilePath + "/" + fileName + "_" + filepath +"_" + chunk);
+        File tmpFile =  new File(tmpfilePath + "/" + fileName + "_" + truetmpfilePath +"_" + chunk);
         try (FileInputStream fis = new FileInputStream(file);
              FileOutputStream fos = new FileOutputStream(tmpFile)) {
 
@@ -300,5 +330,11 @@ public class SysFileUtils {
             }
         }
         return "0";
+    }
+
+    //清除特殊字符“/”和“\”,"$","*"
+    public String removeStr(String str){
+        String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "");
+        return outstr;
     }
 }

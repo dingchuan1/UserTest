@@ -22,7 +22,7 @@ WebUploader.Uploader.register({
 },{
     beforeSendFile:function(file){
         //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
-        var task = new $.Deferred();
+        var task = WebUploader.Base.Deferred();
         //计算文件MD5
         uploader.md5File(file).progress(percentage => {
             console.log("percentage="+percentage * 100);
@@ -45,40 +45,71 @@ WebUploader.Uploader.register({
             }
             timeout2fun(timeoutFuns,3000);
             //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
-            // $.ajax({
-            //     url: 'http://localhost:8080/CheckFileState',
-            //     type: "post",
-            //     data: {'fileName':file.name,'fileMd5':file.md5},
-            //     success: function (data) {
-            //         let info=JSON.parse(data);
-            //         if(info["code"]=="200"){
-            //             document.cookie = info["data"].tokenName+"="+info["data"].tokenValue;
-            //             let page = checkPerm(info["msg"]);
-            //             console.log(page);
-            //             window.location.href="http://localhost:8080/"+page+".html?servicesName="+page;
-            //         }
-            //         console.log(data);
-            //     },
-            //     error: function (data) {
-            //         rel.push(data);
-            //     }
-            // })
-            //服务器应该将传输的分片文件的md5保存，
-            // if(retrunstatus == 101){
-            //     //分片文件在服务器中不存在，就是正常流程
-            // }else if(retrunstatus == 100){
-            //     //分片文件在服务器中已存在，标识上传成功并跳过上传过程
-            //     uploader.skipFile(file);
-            //     file.pass = true;
-            // }else if(retrunstatus == 102){
-            //     //部分以上传，但是差几个分片
-            //     file.missChunks = data.xxxx;
-            // }
-        });
-        return $.when(task);
-    },
-    beforeSend:function(){
+            $.ajax({
+                url: 'http://localhost:8080/GetFileState',
+                type: "get",
+                data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"file"},
+                success: function (data) {
+                    if(data == "200"){
+                        //分片文件在服务器中不存在，就是正常流程
 
+                    }else if(data == "201"){
+                        //分片文件在服务器中已存在，标识上传成功并跳过上传过程
+                        uploader.skipFile(file);
+                        file.pass = true;
+                    }else if(data == "202"){
+                        //文件为最新文件，需要确认是否覆盖
+                        fileAlert(file.id);
+                    }else if(data.startsWith("300_")){
+                        //部分以上传，返回值为已经上传的分片数
+                        var index = data.indexOf("_");
+                        var result = data.slice(index+1);
+                        file.saveChunks = result;
+                    }
+                    task.resolve();
+                    console.log(data);
+                },
+                error: function (data) {
+                    //rel.push(data);
+                }
+            })
+
+        });
+        return task;
+    },
+    beforeSend:function(block){
+        console.log("beforeSend");
+        var file=block.file;
+        var task = WebUploader.Base.Deferred();
+        uploader.md5File(file,block.start,block.end).progress(percentage => {
+            console.log("percentage="+percentage * 100);
+        }).then(function (fileMd5){
+            console.log("完成");
+            block.md5 = fileMd5;
+
+            //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
+            $.ajax({
+                url: 'http://localhost:8080/GetFileState',
+                type: "get",
+                data: {'filename':file.name,'filemd5':block.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"chunk"},
+                success: function (data) {
+                    if(data == "200"){
+                        //该分片文件在服务器中不存在，就是正常流程
+
+                    }else if(data == "201"){
+                        //分片文件在服务器中已存在，标识上传成功并跳过上传过程
+                        block.pass = true;
+                    }
+                    task.resolve();
+                    console.log(data);
+                },
+                error: function (data) {
+                    //rel.push(data);
+                }
+            })
+
+        });
+        return task;
     }
 })
 
@@ -248,15 +279,52 @@ uploader.on('uploadProgress', function(file, percentage) {
 
 //uploadBeforeSend，在分片模式下，当文件的分块在发送前触发
 uploader.on('uploadBeforeSend',function(block,data){
+    if(block.pass){
+       return;
+    }
     var file = block.file;
     //data可以携带参数到后端
     data.name = file.name;//文件名字
-    data.md5Value = file.md5;//文件整体的md5值
+    data.filemd5Value = file.md5;//文件整体的md5值
+    data.blockmd5Value = block.md5;//文件整体的md5值
     data.start = block.start;//分片数据块在整体文件的开始位置
     data.end = block.end;//分片数据块在整体文件的结束位置
     data.chunk = block.chunk;//分片的索引位置
     data.chunks = block.chunks;//整个文件总共分了多少片
+    data.filepath = "\\test\\";
 });
+
+//确认是否需要覆盖文件提示框
+function fileAlert(fileId){
+    uploader.stop(fileId);
+    const alertPlaceholder = document.getElementById("progressBar_up_text_"+fileId).parentElement;
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = [
+        `<div class="alert alert-warning alert-dismissible" role="alert">`,
+        `   <div>是否需要覆盖之前的旧文件</div>`,
+        `   <button id="trueState_"+fileId type="button" class="btn-purple" data-bs-dismiss="alert" onclick="setuploaderState(true,this);stopPropag(event);" aria-label="Close">是</button>`,
+        `   <button id="falseState_"+fileId type="button" class="btn-purple" data-bs-dismiss="alert" onclick="setuploaderState(false,this);stopPropag(event);" aria-label="Close">否</button>`,
+        `</div>`
+    ].join('');
+    alertPlaceholder.style.display = 'none';
+    alertPlaceholder.parentElement.append(wrapper);
+
+}
+
+//提示框后续操作
+function setuploaderState(flag,obj){
+    const index = obj.getId.indexOf("_");
+    const fileId = obj.getId.slice(index+1);
+    const alertPlaceholder = document.getElementById("progressBar_up_text_"+fileId).parentElement;
+    if(flag){
+        uploader.upload(fileId);
+    }else {
+        uploader.skipFile(fileId);
+    }
+    obj.parentElement.style.display = 'none';
+    alertPlaceholder.style.display = '';
+
+}
 
 function fileClick(fileid){
     var delfilelistobj = $("#delfilelist");

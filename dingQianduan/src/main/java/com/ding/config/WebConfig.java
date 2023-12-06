@@ -21,7 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new MyInterceptor()).addPathPatterns("/**")//拦截所有访问
-                .excludePathPatterns("/","/Login","/denglu.html","/css/**","/js/**","/bootstrap/**");
+                .excludePathPatterns("/","/Login","/denglu.html","/css/**","/js/**","/bootstrap/**","/bootstrap-icons-1.11.1/**","/tabler-dev/**");
                 //放行登录页面，登录操作，静态资源
     }
     
