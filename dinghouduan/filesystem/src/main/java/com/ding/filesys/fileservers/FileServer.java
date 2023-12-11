@@ -82,10 +82,12 @@ public class FileServer {
             200:该分片文件不存在
             201:该分片已存在
      */
-    public String checkChunkFileState(String userid,String filename,String filemd5,String filepath){
+    public String checkChunkFileState(String userid,String filename,String filemd5,String filepath,String chunk){
         String returnCode = "";
         String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
-        String fileExit = fileUtils.checkFileExit(configChunkFilePath,filename,filepath,filemd5);
+        String translatedFilepath = fileUtils.removeStr(filepath);
+        String translatedFilename = filename+"_"+translatedFilepath+"_"+chunk;
+        String fileExit = fileUtils.checkFileExit(configChunkFilePath,translatedFilename,filepath,filemd5);
         if("0".equals(fileExit)){
             returnCode = "200";
         }else if("2".equals(fileExit)){

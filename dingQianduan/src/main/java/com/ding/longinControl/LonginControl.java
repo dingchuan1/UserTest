@@ -104,18 +104,26 @@ public class LonginControl{
     @RequestMapping(value = "/GetFileState", method = RequestMethod.GET)
     public String GetFileState(HttpServletRequest request){
         String returncode = "";
+        String parameters = "";
         String servicesName = request.getParameter("servicesName");
         String filename= request.getParameter("filename");
         String filemd5= request.getParameter("filemd5");
         String filepath= request.getParameter("filepath");
         String checktype= request.getParameter("checktype");
+        String blockChunk = request.getParameter("blockchunk");
         String tokenValue = jumpTool.getTokenValue(request);
         System.out.println("GetFileState_servicesName="+servicesName);
         System.out.println("GetFileState_filename="+filename);
         System.out.println("GetFileState_filemd5="+filemd5);
         System.out.println("GetFileState_filepath="+filepath);
-        String parameters = "uaa/getFileState?filename="+filename+"&filemd5="+filemd5+"&filepath="+filepath+"&servicesName="+servicesName+
-                "&user_satoken="+tokenValue+"&checktype="+checktype;
+        if(blockChunk != null && "".equals(blockChunk)){
+            parameters = "uaa/getFileState?filename="+filename+"&filemd5="+filemd5+"&filepath="+filepath+"&servicesName="+servicesName+
+                    "&user_satoken="+tokenValue+"&checktype="+checktype+"&blockchunk="+blockChunk;
+        }else {
+            parameters = "uaa/getFileState?filename="+filename+"&filemd5="+filemd5+"&filepath="+filepath+"&servicesName="+servicesName+
+                    "&user_satoken="+tokenValue+"&checktype="+checktype;
+        }
+
         String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
         return res;
 

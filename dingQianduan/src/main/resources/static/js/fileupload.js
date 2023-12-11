@@ -91,7 +91,7 @@ WebUploader.Uploader.register({
             $.ajax({
                 url: 'http://localhost:8080/GetFileState',
                 type: "get",
-                data: {'filename':file.name,'filemd5':block.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"chunk"},
+                data: {'filename':file.name,'filemd5':block.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"chunk",'blockchunk':block.chunk},
                 success: function (data) {
                     if(data == "200"){
                         //该分片文件在服务器中不存在，就是正常流程

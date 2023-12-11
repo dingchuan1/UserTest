@@ -152,14 +152,21 @@ public class UserController {
         String filemd5= request.getParameter("filemd5");
         String filepath= request.getParameter("filepath");
         String checktype= request.getParameter("checktype");
+        String blockchunk= request.getParameter("blockchunk");
         System.out.println("checkFileState_servicesName="+servicesName);
         System.out.println("checkFileState_filename="+filename);
         System.out.println("checkFileState_filemd5="+filemd5);
         System.out.println("checkFileState_filepath="+filepath);
         if(StpUtil.isLogin()) {
             if (StpUtil.hasRole(permTable.getRoleKey(servicesName))) {
-                res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
-                        +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype, String.class);
+                if(blockchunk != null && "".equals(blockchunk)){
+                    res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                            +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype+"&blockchunk="+blockchunk, String.class);
+                }else {
+                    res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                            +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype, String.class);
+                }
+
             }
         }
         return res;

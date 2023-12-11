@@ -13,6 +13,8 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -135,27 +137,38 @@ public class SysFileUtils {
     //设置用户储存文件信息
     public String setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
         String returncode = "";
+        FileLock lock = null;
         String configFilePath = getConfigFilePath(userid,type);
         //ObjectMapper的内存开销很大
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> jsonData = new HashMap<>();
         Map<String, String> jsonData1 = new HashMap<>();
         File configFile = new File(configFilePath);
-        String sameFile = checkFileExit(configFilePath,fileName,filePath,fileMd5);
+        String relseFilePath = removeStr(filePath);
+        String relseFileName = fileName+"_"+relseFilePath+"_"+chunk;
+        String sameFile = checkFileExit(configFilePath,relseFileName,filePath,fileMd5);
         if("0".equals(sameFile)){
             jsonData1.put("filePath", filePath);
             jsonData1.put("fileMd5", fileMd5);
             jsonData1.put("chunk", chunk+"");
             jsonData1.put("chunks", chunks+"");
+            RandomAccessFile  raf = null;
+
             try {
+                raf = new RandomAccessFile(configFile, "rw");
+                FileChannel channel = raf.getChannel();
+                lock = channel.lock();
+                //因为FileUtils.readLines线程不安全，所以需要加锁确保信息都写入。
                 List<String> lines = FileUtils.readLines(configFile, "UTF-8");
 
-                jsonData.put(fileName, objectMapper.writeValueAsString(jsonData1));
+                jsonData.put(relseFileName, objectMapper.writeValueAsString(jsonData1));
                 String jsonString = objectMapper.writeValueAsString(jsonData);
                 if(lines.size()==2){
-                    lines.set(lines.size() - 1, jsonString+"\n]");
+                    lines.set(lines.size() - 1 , jsonString);
+                    lines.add("]");
                 } else if (lines.size()>2) {
-                    lines.set(lines.size() - 1, ","+jsonString+"\n]");
+                    lines.set(lines.size() - 1, ","+jsonString);
+                    lines.add("]");
                 }
                 FileUtils.writeLines(configFile, "UTF-8", lines);
 //                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
@@ -166,6 +179,12 @@ public class SysFileUtils {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                try {
+                    lock.release();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
             returncode = "0";
         }else {
@@ -223,9 +242,10 @@ public class SysFileUtils {
         while (elements.hasNext()) {
             ObjectNode object = (ObjectNode) elements.next();
             if(object.has(fileName)){
-                if(filePath.equals(object.get(fileName).get("filePath").asText())){
+                JsonNode flvNode = object.get(fileName);
+                if(filePath.equals(flvNode.get("filePath").asText())){
                     sameFile = "1";
-                    if(!filemd5.equals(object.get(fileName).get("fileMd5").asText())){
+                    if(!filemd5.equals(flvNode.get("fileMd5").asText())){
                         sameFile = "2";
                     }
 
@@ -334,7 +354,7 @@ public class SysFileUtils {
 
     //清除特殊字符“/”和“\”,"$","*"
     public String removeStr(String str){
-        String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "");
+        String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "^");
         return outstr;
     }
 }

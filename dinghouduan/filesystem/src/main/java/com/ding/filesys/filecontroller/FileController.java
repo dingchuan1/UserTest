@@ -48,20 +48,20 @@ public class FileController {
         if(!"0".equals(rcd)){
             return "500";
         }
-        if (chunk == chunks - 1) {
-            String rcd1;
-            try {
-                rcd1 = fileUtil.mergeChunks(filename, chunks, tmpfilePath, userPath);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                return "文件上传出错，请联系管理员";
-            }
-            if ("0".equals(rcd1)) {
-                return "200";
-            }else {
-                return "500";
-            }
-        }
+//        if (chunk == chunks - 1) {
+//            String rcd1;
+//            try {
+//                rcd1 = fileUtil.mergeChunks(filename, chunks, tmpfilePath, userPath);
+//            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+//                return "文件上传出错，请联系管理员";
+//            }
+//            if ("0".equals(rcd1)) {
+//                return "200";
+//            }else {
+//                return "500";
+//            }
+//        }
         return "200";
     }
 
@@ -79,12 +79,13 @@ public class FileController {
         //用户的总空间大小GB
         String filename= request.getParameter("filename");
         String checktype= request.getParameter("checktype");
-        String filemd5= request.getParameter("fileMd5");
+        String filemd5= request.getParameter("filemd5");
         String filePath = request.getParameter("filepath");
+        String blockchunk = request.getParameter("blockchunk");
         if("file".equals(checktype)){
             stateCode = fileServer.checkFileState(userid,filename,filemd5,filePath);
         }else if("chunk".equals(checktype)){
-            stateCode = fileServer.checkChunkFileState(userid,filename,filemd5,filePath);
+            stateCode = fileServer.checkChunkFileState(userid,filename,filemd5,filePath,blockchunk);
         }
 
         return stateCode;
