@@ -20,13 +20,7 @@ public class FileServer {
      */
     public String saveChunkFileService(String userId, File file, int chunk,int chunks, String fileName, String filepath,String filemd5){
         String retruncode = "";
-        String javaFilemd5 ="";
-        try {
-            javaFilemd5 = Md5Utiles.getFileMD5(file);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        if(javaFilemd5.equals(filemd5)){
+        if(fileUtils.checkFileMd5(file,filemd5)){
             String mesString = fileUtils.setFileMes(userId,filemd5,chunk,chunks,fileName,filepath,"tmplocation");
             if("0".equals(mesString)){
                 fileUtils.saveChunkFile(file,chunk,fileName,userId,filepath);
@@ -94,5 +88,57 @@ public class FileServer {
             returnCode = "201";
         }
         return returnCode;
+    }
+
+    //检查文件的分片是否齐全
+    public int checkFileChunks(String userid,String filename,String filepath,String chunks){
+        int conts = 0;
+        String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
+        String chunkFilePath = fileUtils.getSaveFilePath(userid,"tmplocation");
+        conts = fileUtils.getTrueChunks(filename,filepath,configChunkFilePath,chunkFilePath);
+        if(conts > 0){
+            int jschunks = Integer.parseInt(chunks);
+            if(jschunks != conts){
+                return -1;
+            }else {
+                return conts;
+            }
+        }
+        return conts;
+    }
+
+    public String mergeToFile(String userid,String filename,String filepath,String chunks,String filemd5){
+        String filePath = fileUtils.getSaveFilePath(userid,"location") + filepath;
+        String tpmFilename = filename+ "_"+fileUtils.removeStr(filepath);
+        String chunkFilePath = fileUtils.getSaveFilePath(userid,"tmplocation");
+        String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
+        String configFilePath = fileUtils.getConfigFilePath(userid,"location");
+        int filechunks = Integer.parseInt(chunks);
+        String recode = "";
+        try {
+            recode = fileUtils.mergeChunks(filename,tpmFilename,filechunks,chunkFilePath,filePath);
+            if("0".equals(recode)){
+                recode =  fileUtils.setFileMes(userid,filemd5,0,filechunks,filename,filepath,"location");
+                if("0".equals(recode)){
+                    //删除临时文件和信息。
+                    recode = fileUtils.removeTmpFileAndTmpMes(filename,chunkFilePath,filechunks,filepath,configChunkFilePath);
+                    if("500".equals(recode) || recode.startsWith("success_")){
+                        //对比合并后的文件md5
+                        File mergeFile = new File(filePath,filename);
+                        if(!fileUtils.checkFileMd5(mergeFile,filemd5)){
+                            return "400^上传的文件可能受损";
+                        }else {
+                            recode = "0^"+recode;
+                        }
+                    }
+                    recode = "500^"+recode+"_临时文件和临时文件信息删除出错";
+                }
+                recode = "500^"+recode+"_文件信息写入失败";
+            }
+            recode = "500^"+recode;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return recode;
     }
 }

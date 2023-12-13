@@ -19,11 +19,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SysFileUtils {
-
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     //读取xml配置文件
     //DOM解析器来读取和解析XML文件
     public static Map redFileXml(){
@@ -134,10 +136,115 @@ public class SysFileUtils {
         return  count;
     }
 
+    public int removeTmpMes(String fileName,String configFilePath,String filePath){
+        int recode = 0;
+        File configFile = new File(configFilePath);
+        String truename = fileName + "_"+ removeStr(filePath);
+        try {
+            List<String> lines = readLines(configFile);
+            for(int i=0;i<lines.size();i++){
+                if(lines.get(i).contains(truename)){
+                    lines.remove(i);
+                    recode++;
+                }
+            }
+            if(lines.get(1).charAt(0) == ','){
+                lines.get(1).substring(1);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return recode;
+    }
+
+    public int removeTmpFile(String fileName,String tmpfilePath,int chunks,String filePath){
+        int recode = 0;
+        int waitconts = 0;
+        String truename = fileName + "_"+ removeStr(filePath);
+        for(int i=0;i<chunks;i++){
+            File tmpfile = new File(tmpfilePath,truename+"_"+i);
+            while(!tmpfile.exists()){
+                try {
+                    Thread.sleep(100);
+                    //等待次数
+                    waitconts++;
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                if(waitconts>10){
+                    recode--;
+                    break;
+                }
+            }
+            if(i==recode){
+                tmpfile.delete();
+            }
+            recode++;
+        }
+        return recode;
+    }
+
+    /*
+        retrun:
+            "300_$":临时文件删除出问题，$=0没有删除，$<0删除有错
+            "400":临时文件信息删除出问题。
+            "500":临时文件数量和临时文件信息数量对不上。
+            "success_$":成功，$成功数量
+     */
+    public String removeTmpFileAndTmpMes(String fileName,String tmpfilePath,int chunks,String filePath,String configFilePath){
+        String recode = "";
+        int recfilecode = removeTmpFile(fileName,tmpfilePath,chunks,filePath);
+        int recmescode = removeTmpMes(fileName,configFilePath,filePath);
+        if(recfilecode<=0){
+            return "300_"+recfilecode;
+        }
+        if(recmescode==0){
+            return "400";
+        }
+        if(recfilecode != recmescode){
+            return "500";
+        }
+        if(recfilecode > 0){
+            recode = "success_"+recfilecode;
+        }
+        return  recode;
+    }
+
+    public boolean checkFileMd5(File file,String jsmd5){
+        boolean recode = false;
+        String javaFilemd5 ="";
+        try {
+            javaFilemd5 = Md5Utiles.getFileMD5(file);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        if(javaFilemd5.equals(jsmd5)){
+            return true;
+        }
+        return recode;
+    }
+
+    public List<String> readLines(File file) throws IOException {
+        lock.readLock().lock();
+        try {
+            return FileUtils.readLines(file,"UTF-8");// Charset.defaultCharset()
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void writeLines(File file, List<String> lines) throws IOException {
+        lock.writeLock().lock();
+        try {
+            FileUtils.writeLines(file, "UTF-8",lines);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     //设置用户储存文件信息
     public String setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
         String returncode = "";
-        FileLock lock = null;
         String configFilePath = getConfigFilePath(userid,type);
         //ObjectMapper的内存开销很大
         ObjectMapper objectMapper = new ObjectMapper();
@@ -145,21 +252,21 @@ public class SysFileUtils {
         Map<String, String> jsonData1 = new HashMap<>();
         File configFile = new File(configFilePath);
         String relseFilePath = removeStr(filePath);
-        String relseFileName = fileName+"_"+relseFilePath+"_"+chunk;
+        String relseFileName = "";
+        if("location".equals(type)){
+            relseFileName = fileName;
+        }else if("tmplocation".equals(type)){
+            relseFileName = fileName+"_"+relseFilePath+"_"+chunk;
+            jsonData1.put("chunk", chunk+"");
+        }
         String sameFile = checkFileExit(configFilePath,relseFileName,filePath,fileMd5);
         if("0".equals(sameFile)){
             jsonData1.put("filePath", filePath);
             jsonData1.put("fileMd5", fileMd5);
-            jsonData1.put("chunk", chunk+"");
             jsonData1.put("chunks", chunks+"");
-            RandomAccessFile  raf = null;
-
             try {
-                raf = new RandomAccessFile(configFile, "rw");
-                FileChannel channel = raf.getChannel();
-                lock = channel.lock();
                 //因为FileUtils.readLines线程不安全，所以需要加锁确保信息都写入。
-                List<String> lines = FileUtils.readLines(configFile, "UTF-8");
+                List<String> lines = readLines(configFile);
 
                 jsonData.put(relseFileName, objectMapper.writeValueAsString(jsonData1));
                 String jsonString = objectMapper.writeValueAsString(jsonData);
@@ -170,7 +277,7 @@ public class SysFileUtils {
                     lines.set(lines.size() - 1, ","+jsonString);
                     lines.add("]");
                 }
-                FileUtils.writeLines(configFile, "UTF-8", lines);
+                writeLines(configFile,  lines);
 //                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
 //                writer.write(jsonString+",");
 //                writer.write(System.lineSeparator()); // 可选，添加换行符
@@ -179,12 +286,6 @@ public class SysFileUtils {
                 e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
-            }finally {
-                try {
-                    lock.release();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
             }
             returncode = "0";
         }else {
@@ -193,29 +294,61 @@ public class SysFileUtils {
         return returncode;
     }
 
-    //检查文件md5值是否相同
-//    public String checkFileMd5(String configFilePath,String fileName,String filePath,String filemd5){
-//        JsonNode rootNode;
-//        File configFile = new File(configFilePath);
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        boolean md5code = false;
-//        try {
-//            rootNode = objectMapper.readTree(configFile);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return "ERR:创建json对象出错";
-//        }
-//        Iterator<JsonNode> elements = rootNode.elements();
-//        while (elements.hasNext()) {
-//            ObjectNode object = (ObjectNode) elements.next();
-//            if(object.has(fileName)){
-//                if(filePath.equals(object.get(fileName).get("filePath").asText())){
-//                    md5code = true;
-//                }
-//            }
-//        }
-//
-//    }
+    //获取指定路径中包含searchTerm的文件
+    /*
+        pram type
+            true:包括子文件夹中的文件
+            false:不包含子文件夹中的文件
+    */
+    public int countFilesContainingText(String path, String searchTerm,boolean type) {
+        File directory = new File(path);
+        return countFilesContainingTextInDirectory(directory, searchTerm,type);
+    }
+    private static int countFilesContainingTextInDirectory(File directory, String searchTerm,boolean type) {
+        int count = 0;
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        if(type){
+                            count += countFilesContainingTextInDirectory(file, searchTerm,type);
+                        }
+                    } else {
+                        if (file.getName().contains(searchTerm)) {
+                            count++;
+                        }
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+
+    public int getTrueChunks(String filename,String filepath,String configChunkFilePath,String chunkFilePath){
+        int fileconfigConts = 0;
+        int filepathConts = 0;
+        String relseFilePath = removeStr(filepath);
+        File configFile = new File(configChunkFilePath);
+        String checkFileName = filename+ "_" + relseFilePath;
+        try {
+            List<String> lines = readLines(configFile);
+            for (String subset : (lines)) {
+                if(subset.contains(checkFileName)){
+                    fileconfigConts++;
+                }
+            }
+
+            filepathConts = countFilesContainingText(chunkFilePath,checkFileName,false);
+            if(fileconfigConts != filepathConts){
+                return -1;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return filepathConts;
+    }
 
     //检查总文件是否存在
     /*
@@ -307,7 +440,7 @@ public class SysFileUtils {
     }
 
     //合并上传的分片
-    public String mergeChunks(String fileName,int chunks,String tmpfilePath,String userPath) throws FileNotFoundException {
+    public String mergeChunks(String fileName,String tmpFilename,int chunks,String tmpfilePath,String userPath) throws FileNotFoundException {
         BufferedOutputStream os = null;
         File userPathdir = new File(userPath);
         File finalFile = new File(userPath + "/" + fileName);
@@ -323,7 +456,7 @@ public class SysFileUtils {
             }
             os = new BufferedOutputStream(new FileOutputStream(finalFile));
             for(int i=0;i<chunks;i++){
-                File tmpfile = new File(tmpfilePath,fileName+"_"+i);
+                File tmpfile = new File(tmpfilePath,tmpFilename+"_"+i);
                 while(!tmpfile.exists()){
                     Thread.sleep(100);
                 }
@@ -331,7 +464,7 @@ public class SysFileUtils {
                 byte[] bytes = FileUtils.readFileToByteArray(tmpfile);
                 os.write(bytes);
                 os.flush();
-                tmpfile.delete();
+                //tmpfile.delete();
             }
             os.flush();
         } catch (InterruptedException e) {

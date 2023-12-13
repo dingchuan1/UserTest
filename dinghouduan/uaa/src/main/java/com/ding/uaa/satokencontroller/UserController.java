@@ -4,19 +4,16 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.spring.SpringMVCUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
-import cn.hutool.json.JSONObject;
 import com.ding.uaa.config.PermTable;
+import com.ding.uaa.util.UserJumpUtility;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
-import java.lang.reflect.Array;
-import java.util.List;
 
 @RestController
 @RequestMapping("/uaa")
@@ -28,6 +25,8 @@ public class UserController {
     private RestTemplate restTemplate;//消费者需要利用restTemplate来获取提供者注册的功能，配置new RestTemplate();
     @Autowired
     private EurekaClient eurekaClient;
+
+    private UserJumpUtility jumpUtility = new UserJumpUtility();
 
     @RequestMapping("/doLogin")
     public SaResult doLogin(HttpServletRequest request){
@@ -102,17 +101,14 @@ public class UserController {
     //用全局拦截器验证登录通过后，重定向请求到file服务
     @RequestMapping(value = "/addFile",method = RequestMethod.POST)
     public String fileOperate(@RequestBody  File file, HttpServletRequest request){
-        InstanceInfo fileinfo = eurekaClient.getNextServerFromEureka("filesys_server",false);
-        String fileurl = fileinfo.getHomePageUrl();
-        System.out.println("file服务:"+fileurl);
-
-        if(fileurl.equals("")){
-            return "500";
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return "500^请登录或没有权限";
         }
         String res = "500";
         //假设当前用户的容量(GB),暂时写死
         String userMaxSize = "50";
-        String servicesName = request.getParameter("servicesName");
+
         String filemd5Value= request.getParameter("filemd5Value");
         String blockmd5Value= request.getParameter("blockmd5Value");
         String filepath= request.getParameter("filepath");
@@ -121,56 +117,65 @@ public class UserController {
         String end= request.getParameter("end");
         String chunk= request.getParameter("chunk");
         String chunks= request.getParameter("chunks");
+        String parameters = "filesys/testupload?id="+StpUtil.getLoginId()+"&usersize="+userMaxSize
+                +"&filename="+filename+"&start="+start+"&end="+end
+                +"&chunk="+chunk+"&chunks="+chunks+"&filemd5Value="+filemd5Value
+                +"&blockmd5Value="+blockmd5Value+"&filepath="+filepath;
         System.out.println("UserController的filename="+filename);
         System.out.println("UserController的start="+start);
         System.out.println("UserController的end="+end);
         System.out.println("UserController的chunk="+chunk);
         System.out.println("UserController的chunks="+chunks);
-        if(StpUtil.isLogin()){
-            if(StpUtil.hasRole(permTable.getRoleKey(servicesName))){
-                res = restTemplate.postForObject(fileurl+"filesys/testupload?id="+StpUtil.getLoginId()+"&usersize="+userMaxSize
-                        +"&filename="+filename+"&start="+start+"&end="+end
-                        +"&chunk="+chunk+"&chunks="+chunks+"&filemd5Value="+filemd5Value
-                        +"&blockmd5Value="+blockmd5Value+"&filepath="+filepath,file, String.class);
-            }
-        }
-
+        res = jumpUtility.jumpPostreturnString("filesys_server",false,parameters,file);
 
         return res;
     }
     //用全局拦截器验证登录通过后，重定向请求到fileState服务
     @RequestMapping(value = "/getFileState",method = RequestMethod.GET)
     public String checkFileState(HttpServletRequest request){
-        InstanceInfo fileinfo = eurekaClient.getNextServerFromEureka("filesys_server",false);
-        String fileurl = fileinfo.getHomePageUrl();
-        if(fileurl.equals("")){
-            return "500";
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return "500^请登录或没有权限";
         }
         String res = "500";
-        String servicesName = request.getParameter("servicesName");
         String filename= request.getParameter("filename");
         String filemd5= request.getParameter("filemd5");
         String filepath= request.getParameter("filepath");
         String checktype= request.getParameter("checktype");
         String blockchunk= request.getParameter("blockchunk");
+        String parameters = "";
+        if(blockchunk != null && "".equals(blockchunk)){
+            parameters = "filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                    +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype+"&blockchunk="+blockchunk;
+        }else {
+            parameters = "filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                    +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype;
+        }
+        res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
         System.out.println("checkFileState_servicesName="+servicesName);
         System.out.println("checkFileState_filename="+filename);
         System.out.println("checkFileState_filemd5="+filemd5);
         System.out.println("checkFileState_filepath="+filepath);
-        if(StpUtil.isLogin()) {
-            if (StpUtil.hasRole(permTable.getRoleKey(servicesName))) {
-                if(blockchunk != null && "".equals(blockchunk)){
-                    res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
-                            +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype+"&blockchunk="+blockchunk, String.class);
-                }else {
-                    res = restTemplate.getForObject(fileurl+"filesys/CheckFileState?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
-                            +"&filename="+filename+"&filepath="+filepath+"&checktype="+checktype, String.class);
-                }
 
-            }
-        }
         return res;
 
+    }
+
+    @RequestMapping(value = "/mergeFile",method = RequestMethod.GET)
+    public String mergeFile(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return "500^请登录或没有权限";
+        }
+        String res = "500";
+        String filename= request.getParameter("filename");
+        String filemd5= request.getParameter("filemd5");
+        String filepath= request.getParameter("filepath");
+        String blockchunks= request.getParameter("blockchunks");
+        String parameters = "filesys/mergeChunks?id="+StpUtil.getLoginId()+"&filemd5="+filemd5
+                +"&filename="+filename+"&filepath="+filepath+"&blockchunks="+blockchunks;
+        res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
+        return res;
     }
 
     // 全局异常拦截（拦截项目中的NotLoginException异常）

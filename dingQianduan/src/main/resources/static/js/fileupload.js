@@ -294,6 +294,26 @@ uploader.on('uploadBeforeSend',function(block,data){
     data.filepath = "\\test\\";
 });
 
+// 上传返回结果
+uploader.on('uploadSuccess', function (file) {
+    if(file.pass){
+
+    }else{
+        $.ajax({
+            url: 'http://localhost:8080/MergeFile',
+            type: "get",
+            data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'blockchunks':file.chunks},
+            success: function (data) {
+
+                console.log(data);
+            },
+            error: function (data) {
+
+            }
+        })
+    }
+});
+
 //确认是否需要覆盖文件提示框
 function fileAlert(fileId){
     uploader.stop(fileId);

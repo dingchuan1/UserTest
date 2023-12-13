@@ -65,6 +65,21 @@ public class FileController {
         return "200";
     }
 
+    @RequestMapping(value = "/mergeChunks",method = RequestMethod.GET)
+    public String mergeChunks(HttpServletRequest request){
+        String filename= request.getParameter("filename");
+        String userid = request.getParameter("id");
+        String filemd5= request.getParameter("filemd5");
+        String filePath = request.getParameter("filepath");
+        String blockchunks = request.getParameter("blockchunks");
+        int conts = fileServer.checkFileChunks(userid,filename,filePath,blockchunks);
+        String reccode = "";
+        if(conts>0){
+            reccode=fileServer.mergeToFile(userid,filename,filePath,blockchunks,filemd5);
+        }
+        return reccode;
+    }
+
     /*
         return:
             200:文件不存在

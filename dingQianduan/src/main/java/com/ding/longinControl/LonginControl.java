@@ -103,7 +103,6 @@ public class LonginControl{
      */
     @RequestMapping(value = "/GetFileState", method = RequestMethod.GET)
     public String GetFileState(HttpServletRequest request){
-        String returncode = "";
         String parameters = "";
         String servicesName = request.getParameter("servicesName");
         String filename= request.getParameter("filename");
@@ -127,5 +126,21 @@ public class LonginControl{
         String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
         return res;
 
+    }
+
+    @RequestMapping(value = "/MergeFile", method = RequestMethod.GET)
+    public String MergeFile(HttpServletRequest request){
+        String parameters = "";
+        String servicesName = request.getParameter("servicesName");
+        String tokenValue = jumpTool.getTokenValue(request);
+        String filename= request.getParameter("filename");
+        String filemd5= request.getParameter("filemd5");
+        String filepath= request.getParameter("filepath");
+        String blockchunks = request.getParameter("blockchunks");
+        System.out.println("blockchunks="+blockchunks);
+        parameters = "uaa/mergeFile?filename="+filename+"&blockchunks="+blockchunks+"&servicesName="+servicesName+
+                "&user_satoken="+tokenValue+"&filemd5="+filemd5+"&filepath="+filepath;
+        String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
+        return res;
     }
 }
