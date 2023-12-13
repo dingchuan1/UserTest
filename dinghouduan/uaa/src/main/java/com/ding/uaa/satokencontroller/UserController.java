@@ -5,6 +5,7 @@ import cn.dev33.satoken.spring.SpringMVCUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.ding.uaa.config.PermTable;
+import com.ding.uaa.util.GetBeanUtility;
 import com.ding.uaa.util.UserJumpUtility;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
@@ -18,15 +19,8 @@ import java.io.File;
 @RestController
 @RequestMapping("/uaa")
 public class UserController {
-
     @Autowired
-    private PermTable permTable;
-    @Autowired
-    private RestTemplate restTemplate;//消费者需要利用restTemplate来获取提供者注册的功能，配置new RestTemplate();
-    @Autowired
-    private EurekaClient eurekaClient;
-
-    private UserJumpUtility jumpUtility = new UserJumpUtility();
+    private UserJumpUtility jumpUtility ;
 
     @RequestMapping("/doLogin")
     public SaResult doLogin(HttpServletRequest request){
@@ -35,7 +29,7 @@ public class UserController {
         System.out.println("uid="+username);
         System.out.println("password="+password);
         //暂时直接判断，没有连接数据库
-        if(("DC".equals(username) && "DC635241.1".equals(password)) || ("test".equals(username) && "DC635241.1".equals(password))){
+        if(("DC".equals(username) && "1".equals(password)) || ("test".equals(username) && "DC635241.1".equals(password))){
             StpUtil.login(username);
             System.out.println("登录id="+StpUtil.getLoginId("moren"));
             System.out.println("登录权限="+StpUtil.getRoleList().toString());
@@ -58,7 +52,7 @@ public class UserController {
     public String hasPermission(HttpServletRequest request){
         String servicesName = request.getParameter("servicesName");
         if(StpUtil.isLogin()){
-            if(StpUtil.hasPermission(permTable.getPermKey(servicesName))){
+            if(StpUtil.hasPermission(jumpUtility.getPermTable().getPermKey(servicesName))){
                 return "200";
             }
         }
@@ -70,7 +64,7 @@ public class UserController {
         String servicesName = request.getParameter("servicesName");
         if(StpUtil.isLogin()){
             //System.out.println(StpUtil.hasRole("admin"));
-            if(StpUtil.hasRole(permTable.getRoleKey(servicesName))){
+            if(StpUtil.hasRole(jumpUtility.getPermTable().getRoleKey(servicesName))){
                 return "200";
             }
         }
@@ -88,11 +82,11 @@ public class UserController {
             //通过其他微服务的名字来获取地址。当是集群时，同一个服务名可以有多个微服务器同时使用，当访问这个服务名时，由负载均衡机制决定具体访问哪个服务器
 
             //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
-            InstanceInfo testinfo = eurekaClient.getNextServerFromEureka("test_satoken_server",false);//false为http，true为https
+            InstanceInfo testinfo = jumpUtility.getEurekaClient().getNextServerFromEureka("test_satoken_server",false);//false为http，true为https
             //2、获取到要访问的地址
             String testurl = testinfo.getHomePageUrl();
             //3、通过restTemplate访问
-            String res = restTemplate.getForObject(testurl+"test/testlogin",String.class);
+            String res = jumpUtility.getRestTemplate().getForObject(testurl+"test/testlogin",String.class);
             return res;
         }
         return "0";

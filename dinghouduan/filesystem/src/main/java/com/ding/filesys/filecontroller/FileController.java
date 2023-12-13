@@ -73,6 +73,7 @@ public class FileController {
         String filePath = request.getParameter("filepath");
         String blockchunks = request.getParameter("blockchunks");
         int conts = fileServer.checkFileChunks(userid,filename,filePath,blockchunks);
+        System.out.println("mergeChunks.conts= "+conts);
         String reccode = "";
         if(conts>0){
             reccode=fileServer.mergeToFile(userid,filename,filePath,blockchunks,filemd5);

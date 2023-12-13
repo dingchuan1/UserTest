@@ -12,12 +12,26 @@ import java.io.File;
 
 @Service
 public class UserJumpUtility {
+
     @Autowired
-    private PermTable permTable;
+    private  PermTable permTable;
     @Autowired
-    private RestTemplate restTemplate;//消费者需要利用restTemplate来获取提供者注册的功能，配置new RestTemplate();
+    private  RestTemplate restTemplate;//消费者需要利用restTemplate来获取提供者注册的功能，配置new RestTemplate();
     @Autowired
-    private EurekaClient eurekaClient;
+    private  EurekaClient eurekaClient;
+
+    public  PermTable getPermTable(){
+        return permTable;
+    }
+
+    public  RestTemplate getRestTemplate(){
+        return restTemplate;
+    }
+
+    public  EurekaClient getEurekaClient(){
+        return eurekaClient;
+    }
+
     public String jumpGetreturnString(String servername,boolean ishttp,String parameters){
         String retruncode = "";
         //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
@@ -25,7 +39,7 @@ public class UserJumpUtility {
         InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
         //2、获取到要访问的地址
         String url = info.getHomePageUrl();
-        System.out.println("跳转地址："+ url);
+        System.out.println("跳转地址："+ url+parameters);
         //3、通过restTemplate访问
         retruncode = restTemplate.getForObject(url + parameters, String.class);
         return retruncode;

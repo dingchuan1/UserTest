@@ -125,8 +125,9 @@ public class SysFileUtils {
         Iterator<JsonNode> elements = rootNode.elements();
         while (elements.hasNext()) {
             ObjectNode object = (ObjectNode) elements.next();
-            Map<String, JsonNode> fields = (Map<String, JsonNode>) object.fields();
-            for (Map.Entry<String, JsonNode> entry : fields.entrySet()) {
+            Iterator<Map.Entry<String, JsonNode>> entryIterator = object.fields();
+            while (entryIterator.hasNext()) {
+                Map.Entry<String, JsonNode> entry = entryIterator.next();
                 if(entry.getKey().startsWith(filename+"_"+filepath)){
                     count++;
                 }
@@ -234,12 +235,24 @@ public class SysFileUtils {
     }
 
     public void writeLines(File file, List<String> lines) throws IOException {
-        lock.writeLock().lock();
-        try {
-            FileUtils.writeLines(file, "UTF-8",lines);
-        } finally {
-            lock.writeLock().unlock();
+        int maxRetries = 5;
+        int retryCount = 0;
+        while (retryCount < maxRetries) {
+            try {
+                lock.writeLock().lock();
+                FileUtils.writeLines(file, "UTF-8",lines);
+                break; // 写入成功，跳出循环
+            } catch (IOException e) {
+                System.err.println("写入失败，进行重试...");
+                retryCount++;
+            }finally {
+                lock.writeLock().unlock();
+            }
         }
+        if (retryCount == maxRetries) {
+            throw new IOException("写入失败，重试次数已达到上限5次");
+        }
+
     }
 
     //设置用户储存文件信息
@@ -270,6 +283,7 @@ public class SysFileUtils {
 
                 jsonData.put(relseFileName, objectMapper.writeValueAsString(jsonData1));
                 String jsonString = objectMapper.writeValueAsString(jsonData);
+
                 if(lines.size()==2){
                     lines.set(lines.size() - 1 , jsonString);
                     lines.add("]");
@@ -277,6 +291,7 @@ public class SysFileUtils {
                     lines.set(lines.size() - 1, ","+jsonString);
                     lines.add("]");
                 }
+                System.out.println(lines.get(lines.size() - 2));
                 writeLines(configFile,  lines);
 //                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
 //                writer.write(jsonString+",");
