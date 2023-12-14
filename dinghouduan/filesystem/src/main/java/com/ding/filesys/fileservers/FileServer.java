@@ -128,12 +128,12 @@ public class FileServer {
                         if(!fileUtils.checkFileMd5(mergeFile,filemd5)){
                             return "400^上传的文件可能受损";
                         }else {
-                            recode = "0^"+recode;
+                            return "0^"+recode;
                         }
                     }
-                    recode = "500^"+recode+"_临时文件和临时文件信息删除出错";
+                    return  "500^"+recode+"_临时文件和临时文件信息删除出错";
                 }
-                recode = "500^"+recode+"_文件信息写入失败";
+                return  "500^"+recode+"_文件信息写入失败";
             }
             recode = "500^"+recode;
         } catch (FileNotFoundException e) {

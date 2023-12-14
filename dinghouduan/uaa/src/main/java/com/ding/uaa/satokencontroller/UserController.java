@@ -5,7 +5,6 @@ import cn.dev33.satoken.spring.SpringMVCUtil;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.ding.uaa.config.PermTable;
-import com.ding.uaa.util.GetBeanUtility;
 import com.ding.uaa.util.UserJumpUtility;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;

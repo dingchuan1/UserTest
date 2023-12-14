@@ -80,6 +80,7 @@ WebUploader.Uploader.register({
     beforeSend:function(block){
         console.log("beforeSend");
         var file=block.file;
+        file.chunks = block.chunks;
         var task = WebUploader.Base.Deferred();
         uploader.md5File(file,block.start,block.end).progress(percentage => {
             console.log("percentage="+percentage * 100);

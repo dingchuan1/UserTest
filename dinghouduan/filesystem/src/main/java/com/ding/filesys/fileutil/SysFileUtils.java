@@ -142,16 +142,18 @@ public class SysFileUtils {
         File configFile = new File(configFilePath);
         String truename = fileName + "_"+ removeStr(filePath);
         try {
-            List<String> lines = readLines(configFile);
+            List<String> lines = readLines(configFile,false);
             for(int i=0;i<lines.size();i++){
                 if(lines.get(i).contains(truename)){
                     lines.remove(i);
                     recode++;
+                    i--;
                 }
             }
             if(lines.get(1).charAt(0) == ','){
-                lines.get(1).substring(1);
+                lines.set(1, lines.get(1).substring(1));
             }
+            writeLines(configFile,lines,false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -225,21 +227,46 @@ public class SysFileUtils {
         return recode;
     }
 
-    public List<String> readLines(File file) throws IOException {
-        lock.readLock().lock();
+
+    /*
+        ReadWriteLock的锁也不全是安全的，比如这个readLock读锁是允许多线程同时读的
+        但是由于我的读写文件逻辑的原因，多线程有可能同一时间读取一样的文件，当编写读取后的内容后再写入时，这时候其他线程的内容可能就写不进去。
+
+        lockflag:
+            true:先读取上锁，且不在这里解锁。在写入的地方解锁。
+            false:都当场上锁用完后解锁
+     */
+    public List<String> readLines(File file,boolean lockflag) throws IOException {
+        if(!lockflag){
+            lock.writeLock().lock();
+        }else {
+            lock.readLock().lock();
+        }
         try {
             return FileUtils.readLines(file,"UTF-8");// Charset.defaultCharset()
         } finally {
-            lock.readLock().unlock();
+            if(lockflag){
+                lock.readLock().unlock();
+            }
         }
     }
 
-    public void writeLines(File file, List<String> lines) throws IOException {
+    /*
+        ReadWriteLock的锁也不全是安全的，比如这个readLock读锁是允许多线程同时读的
+        但是由于我的读写文件逻辑的原因，多线程有可能同一时间读取一样的文件，当编写读取后的内容后再写入时，这时候其他线程的内容可能就写不进去。
+
+        lockflag:
+            true:先读取上锁，且不在这里解锁。在写入的地方解锁。
+            false:都当场上锁用完后解锁
+     */
+    public void writeLines(File file, List<String> lines,boolean lockflag) throws IOException {
         int maxRetries = 5;
         int retryCount = 0;
         while (retryCount < maxRetries) {
             try {
-                lock.writeLock().lock();
+                if(lockflag){
+                    lock.writeLock().lock();
+                }
                 FileUtils.writeLines(file, "UTF-8",lines);
                 break; // 写入成功，跳出循环
             } catch (IOException e) {
@@ -279,7 +306,7 @@ public class SysFileUtils {
             jsonData1.put("chunks", chunks+"");
             try {
                 //因为FileUtils.readLines线程不安全，所以需要加锁确保信息都写入。
-                List<String> lines = readLines(configFile);
+                List<String> lines = readLines(configFile,false);
 
                 jsonData.put(relseFileName, objectMapper.writeValueAsString(jsonData1));
                 String jsonString = objectMapper.writeValueAsString(jsonData);
@@ -292,7 +319,7 @@ public class SysFileUtils {
                     lines.add("]");
                 }
                 System.out.println(lines.get(lines.size() - 2));
-                writeLines(configFile,  lines);
+                writeLines(configFile,  lines,false);
 //                FileWriter writer = new FileWriter(configFile,true);// true 表示追加写入
 //                writer.write(jsonString+",");
 //                writer.write(System.lineSeparator()); // 可选，添加换行符
@@ -348,7 +375,7 @@ public class SysFileUtils {
         File configFile = new File(configChunkFilePath);
         String checkFileName = filename+ "_" + relseFilePath;
         try {
-            List<String> lines = readLines(configFile);
+            List<String> lines = readLines(configFile,true);
             for (String subset : (lines)) {
                 if(subset.contains(checkFileName)){
                     fileconfigConts++;
