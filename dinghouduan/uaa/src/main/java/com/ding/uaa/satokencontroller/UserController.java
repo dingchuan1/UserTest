@@ -9,11 +9,13 @@ import com.ding.uaa.util.UserJumpUtility;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.io.InputStream;
 
 @RestController
 @RequestMapping("/uaa")
@@ -93,7 +95,7 @@ public class UserController {
 
     //用全局拦截器验证登录通过后，重定向请求到file服务
     @RequestMapping(value = "/addFile",method = RequestMethod.POST)
-    public String fileOperate(@RequestBody  File file, HttpServletRequest request){
+    public String fileOperate(@RequestBody  byte[] fileContent, HttpServletRequest request){
         String servicesName = request.getParameter("servicesName");
         if(!jumpUtility.isAcesshasRole(servicesName)){
             return "500^请登录或没有权限";
@@ -119,7 +121,7 @@ public class UserController {
         System.out.println("UserController的end="+end);
         System.out.println("UserController的chunk="+chunk);
         System.out.println("UserController的chunks="+chunks);
-        res = jumpUtility.jumpPostreturnString("filesys_server",false,parameters,file);
+        res = jumpUtility.jumpPostreturnString("filesys_server",false,parameters,fileContent);
 
         return res;
     }

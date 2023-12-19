@@ -5,10 +5,12 @@ import com.ding.uaa.config.PermTable;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
+import java.io.InputStream;
 
 @Service
 public class UserJumpUtility {
@@ -45,7 +47,7 @@ public class UserJumpUtility {
         return retruncode;
     }
 
-    public String jumpPostreturnString(String servername, boolean ishttp, String parameters, File tmpfile){
+    public String jumpPostreturnString(String servername, boolean ishttp, String parameters, byte[] tmpfile){
         String retruncode = "";
         //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
         //false为http，true为https

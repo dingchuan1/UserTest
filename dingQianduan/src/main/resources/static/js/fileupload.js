@@ -210,6 +210,9 @@ uploader.on('fileQueued', function(file) {
             "<div id='cancelbtn_"+fileId+"' class='btn btn-purple' typeflag='cancel' style='margin-left:10px;width: 80px;display: none' onclick='stopPropag(event);cancelUp(this);'>" +
                 "取消上传" +
             "</div>"+
+            "<div id='reUploadbtn_"+fileId+"' class='btn btn-purple' typeflag='cancel' style='margin-left:10px;width: 80px;display: none' onclick='stopPropag(event);reUpload(this);'>" +
+                "重新上传" +
+            "</div>"+
         "</td>" +
         "</tr>";
     var $li = $(lihtml);
@@ -271,10 +274,13 @@ uploader.on('fileQueued', function(file) {
 });
 //uploadProgress显示进度条
 uploader.on('uploadProgress', function(file, percentage) {
-    // 更新进度条。
-    $('#uploadProgress').show();
-    $('#uploadProgressBar').css('width', percentage + '%');
-    $('#uploadProgressBar').find('p').text(percentage+'%');
+    // 总进度条更新进度条。
+    // $('#uploadProgress').show();
+    // $('#uploadProgressBar').css('width', percentage + '%');
+    // $('#uploadProgressBar').find('p').text(percentage+'%');
+
+    $('#progressBar_up_text_'+file.id).text("上传中"+percentage * 100+"%");
+    $('#progressBar_up_'+file.id).css('width', percentage * 100 + '%');
 });
 
 
@@ -305,8 +311,17 @@ uploader.on('uploadSuccess', function (file) {
             type: "get",
             data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'blockchunks':file.chunks},
             success: function (data) {
+                if(data.includes("success")){
+                    $('#progressBar_up_text_'+file.id).text("完成");
+                    $('#progressBar_up_'+file.id).css('display', 'none');
 
-                console.log(data);
+                    $('#delbtn_'+file.id).css('display', 'none');
+                    $('#stopupbtn_'+file.id).css('display', 'none');
+                    $('#cancelbtn_'+file.id).css('display', 'none');
+                    $('#reUploadbtn_'+file.id).css('display', 'block');
+                    $('#readfiletext_'+file.id).text("已上传");
+                }
+
             },
             error: function (data) {
 
@@ -314,6 +329,13 @@ uploader.on('uploadSuccess', function (file) {
         })
     }
 });
+
+//重新上传
+function reUpload(obj){
+    const index = obj.getId.indexOf("_");
+    const fileId = obj.getId.slice(index+1);
+    uploader.upload(fileId);
+}
 
 //确认是否需要覆盖文件提示框
 function fileAlert(fileId){

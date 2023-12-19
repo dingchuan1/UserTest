@@ -3,12 +3,16 @@ package com.ding.tool;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
+import java.io.InputStream;
 
 /*
     Control跳转后台服务共通类
@@ -36,7 +40,7 @@ public class JumpTool {
         return retruncode;
     }
 
-    public String jumpPostreturnString(String servername, boolean ishttp, String parameters, File tmpfile){
+    public String jumpPostreturnString(String servername, boolean ishttp, String parameters, byte[] tmpfile){
         String retruncode = "";
         //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
         //false为http，true为https
@@ -44,6 +48,9 @@ public class JumpTool {
         //2、获取到要访问的地址
         String url = info.getHomePageUrl();
         System.out.println("跳转地址："+ url);
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//        HttpEntity<byte[]> entity = new HttpEntity<>(tmpfile, headers);
         //3、通过restTemplate访问
         retruncode = restTemplate.postForObject(url + parameters,tmpfile, String.class);
         return retruncode;
@@ -60,4 +67,6 @@ public class JumpTool {
         }
         return tokenValue;
     }
+
+
 }

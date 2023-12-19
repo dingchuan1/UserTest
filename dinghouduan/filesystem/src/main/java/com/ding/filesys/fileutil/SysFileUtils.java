@@ -15,6 +15,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -449,7 +451,7 @@ public class SysFileUtils {
     //获取用户剩余的空间大小
 
     //处理上传的分片文件
-    public String saveChunkFile(File file,int chunk,String fileName,String userId,String filepath){
+    public File saveChunkFile(byte[] file,int chunk,String fileName,String userId,String filepath){
         String tmpfilePath = getSaveFilePath(userId,"tmplocation");
         String truetmpfilePath = removeStr(filepath);
         //检查tmp文件夹是否存在，不存在就创建
@@ -460,46 +462,52 @@ public class SysFileUtils {
 
         //将当前分片存储到临时文件中
         File tmpFile =  new File(tmpfilePath + "/" + fileName + "_" + truetmpfilePath +"_" + chunk);
-        try (FileInputStream fis = new FileInputStream(file);
-             FileOutputStream fos = new FileOutputStream(tmpFile)) {
 
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = fis.read(buffer)) > 0) {
-                fos.write(buffer, 0, length);
-            }
+        try {
+//            FileOutputStream fos = new FileOutputStream(tmpFile);
+//            byte[] buffer = new byte[1024];
+//            int length;
+//            while ((length = file.read(buffer)) > 0) {
+//                fos.write(buffer, 0, length);
+//            }
             //System.out.println("File copied successfully!");
             if (tmpFile.createNewFile()) {
                 //System.out.println("File created: " + file.getName());
             } else {
                 System.out.println("File already exists.");
             }
+            Files.write(Path.of(tmpfilePath + "/" + fileName + "_" + truetmpfilePath + "_" + chunk),file);
         } catch (IOException e) {
+            if(tmpFile.exists()){
+                tmpFile.delete();
+            }
             e.printStackTrace();
         }
 
-        return "0";
+        return tmpFile;
     }
 
     //合并上传的分片
     public String mergeChunks(String fileName,String tmpFilename,int chunks,String tmpfilePath,String userPath) throws FileNotFoundException {
-        BufferedOutputStream os = null;
         File userPathdir = new File(userPath);
         File finalFile = new File(userPath + "/" + fileName);
+        FileOutputStream fos = null;
+        BufferedOutputStream  os = null;
         try {
 
             if(!userPathdir.exists()){
                 userPathdir.mkdirs();
             }
-            if (finalFile.createNewFile()) {
-                //System.out.println("File created: " + file.getName());
-            } else {
-                System.out.println("File already exists.");
-            }
-            os = new BufferedOutputStream(new FileOutputStream(finalFile));
-            for(int i=0;i<chunks;i++){
-                File tmpfile = new File(tmpfilePath,tmpFilename+"_"+i);
-                while(!tmpfile.exists()){
+//            if (finalFile.createNewFile()) {
+//                //System.out.println("File created: " + file.getName());
+//            } else {
+//                System.out.println("File already exists.");
+//            }
+            fos = new FileOutputStream(finalFile);
+            os = new BufferedOutputStream(fos);
+            for (int i = 0; i < chunks; i++) {
+                File tmpfile = new File(tmpfilePath, tmpFilename + "_" + i);
+                while (!tmpfile.exists()) {
                     Thread.sleep(100);
                 }
 
@@ -508,21 +516,22 @@ public class SysFileUtils {
                 os.flush();
                 //tmpfile.delete();
             }
-            os.flush();
+            fos.close();
+            os.close();
         } catch (InterruptedException e) {
+            if(finalFile.exists()){
+                finalFile.delete();
+            }
             e.printStackTrace();
             return "文件上传出错，请联系管理员";
         } catch (IOException e) {
+            if(finalFile.exists()){
+                finalFile.delete();
+            }
             e.printStackTrace();
             return "文件上传出错，请联系管理员";
         }finally {
-            if(os !=null){
-                try {
-                    os.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+
         }
         return "0";
     }

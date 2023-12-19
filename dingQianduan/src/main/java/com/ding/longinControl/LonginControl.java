@@ -17,6 +17,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,7 +68,7 @@ public class LonginControl{
         String chunk= request.getParameter("chunk");
         String chunks= request.getParameter("chunks");
         String tmpfilepath = "E:\\\\DCLoginTmp\\"+filename+"_"+chunk;
-        File tmpFile = fileTool.multipartFileToFile(tmpfilepath,file);
+        byte[] tmpFile = fileTool.multipartFileToFileToBytes(tmpfilepath,file);
         String parameters = "uaa/addFile?filename="+filename+"&start="+start+"&end="+end+"&chunk="+chunk+"&chunks="+chunks+"&servicesName="+servicesName+
                 "&user_satoken="+tokenValue+"&filemd5Value="+filemd5Value+"&blockmd5Value="+blockmd5Value+"&filepath="+filepath;
         System.out.println("分片名："+file.getName());

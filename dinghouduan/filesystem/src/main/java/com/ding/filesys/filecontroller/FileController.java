@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 @RestController
 @RequestMapping("/filesys")
@@ -22,7 +23,7 @@ public class FileController {
     FileServer fileServer;
 
     @RequestMapping(value = "/testupload",method = RequestMethod.POST)
-    public String addFile(HttpServletRequest request,@RequestBody File file){
+    public String addFile(HttpServletRequest request,@RequestBody byte[] fileContent){
 
         String userid = request.getParameter("id");
         //用户的总空间大小GB
@@ -44,7 +45,7 @@ public class FileController {
         System.out.println("FileController的filePath="+filePath);
         String userPath = SysFileUtils.redFileXml().get("location")+"/"+userid;
         String tmpfilePath = SysFileUtils.redFileXml().get("tmplocation")+"/"+userid;
-        String rcd = fileServer.saveChunkFileService(userid,file,chunk,chunks,filename,filePath,blockmd5);
+        String rcd = fileServer.saveChunkFileService(userid,fileContent,chunk,chunks,filename,filePath,blockmd5);
         if(!"0".equals(rcd)){
             return "500";
         }

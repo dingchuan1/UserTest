@@ -1,6 +1,5 @@
 package com.ding.filesys.fileservers;
 
-import com.ding.filesys.fileutil.Md5Utiles;
 import com.ding.filesys.fileutil.SysFileUtils;
 import org.springframework.stereotype.Service;
 
@@ -18,19 +17,19 @@ public class FileServer {
             201:该分片已存在
             200:该分片保存成功
      */
-    public String saveChunkFileService(String userId, File file, int chunk,int chunks, String fileName, String filepath,String filemd5){
+    public String saveChunkFileService(String userId, byte[] file, int chunk, int chunks, String fileName, String filepath, String filemd5){
         String retruncode = "";
-        if(fileUtils.checkFileMd5(file,filemd5)){
-            String mesString = fileUtils.setFileMes(userId,filemd5,chunk,chunks,fileName,filepath,"tmplocation");
-            if("0".equals(mesString)){
-                fileUtils.saveChunkFile(file,chunk,fileName,userId,filepath);
+        File targeFile = null;
+        String mesString = fileUtils.setFileMes(userId,filemd5,chunk,chunks,fileName,filepath,"tmplocation");
+        if("0".equals(mesString)){
+            targeFile = fileUtils.saveChunkFile(file,chunk,fileName,userId,filepath);
+            if(fileUtils.checkFileMd5(targeFile,filemd5)){
                 retruncode = "200";
-            }else {
-                retruncode = "201";
+            }else{
+                retruncode = "500";
             }
-
-        }else{
-            retruncode = "500";
+        }else {
+            retruncode = "201";
         }
         return retruncode;
     }
