@@ -240,7 +240,9 @@ public class SysFileUtils {
      */
     public List<String> readLines(File file,boolean lockflag) throws IOException {
         if(!lockflag){
-            lock.writeLock().lock();
+//            if(lock.writeLock()==null){
+                lock.writeLock().lock();
+//            }
         }else {
             lock.readLock().lock();
         }
@@ -284,6 +286,21 @@ public class SysFileUtils {
 
     }
 
+    public JsonNode readTree(ObjectMapper objectMapper,File configfile,boolean type) throws IOException {
+        JsonNode node = null;
+        lock.writeLock().lock();
+        node = objectMapper.readTree(configfile);
+        lock.writeLock().unlock();
+//        if(type){
+//            lock.writeLock().lock();
+//            node =  objectMapper.readTree(configfile);
+//        }else {
+//            lock.readLock().lock();
+//            node = objectMapper.readTree(configfile);
+//            lock.readLock().unlock();
+//        }
+        return node;
+    }
     //设置用户储存文件信息
     public String setFileMes(String userid,String fileMd5,int chunk,int chunks,String fileName,String filePath,String type){
         String returncode = "";
@@ -301,7 +318,7 @@ public class SysFileUtils {
             relseFileName = fileName+"_"+relseFilePath+"_"+chunk;
             jsonData1.put("chunk", chunk+"");
         }
-        String sameFile = checkFileExit(configFilePath,relseFileName,filePath,fileMd5);
+        String sameFile = checkFileExit(configFilePath,relseFileName,filePath,fileMd5,true);
         if("0".equals(sameFile)){
             jsonData1.put("filePath", filePath);
             jsonData1.put("fileMd5", fileMd5);
@@ -401,7 +418,7 @@ public class SysFileUtils {
                1,存在
                2,存在但md5值不同
      */
-    public String checkFileExit(String configFilePath,String fileName,String filePath,String filemd5){
+    public String checkFileExit(String configFilePath,String fileName,String filePath,String filemd5,boolean type){
         JsonNode rootNode;
         File configFile = new File(configFilePath);
         String sameFile = "0";
@@ -410,7 +427,7 @@ public class SysFileUtils {
         }
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            rootNode = objectMapper.readTree(configFile);
+            rootNode = readTree(objectMapper,configFile,type);
         } catch (IOException e) {
             e.printStackTrace();
             return "ERR:创建json对象出错";

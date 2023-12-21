@@ -23,11 +23,11 @@ WebUploader.Uploader.register({
     beforeSendFile:function(file){
         //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
         var task = WebUploader.Base.Deferred();
+        $('#readfiletext_'+ file.id).text('正在读取文件');
         //计算文件MD5
         uploader.md5File(file).progress(percentage => {
             console.log("percentage="+percentage * 100);
             $('#progress_'+ file.id).css('display','block');
-            $('#readfiletext_'+ file.id).text('正在读取文件');
             $('#progressBar_text_'+ file.id).text('以读取'+percentage+'%');
             $('#progressBar_'+ file.id).css('width', percentage + '%');
         }).then(function (fileMd5){
@@ -85,7 +85,6 @@ WebUploader.Uploader.register({
         uploader.md5File(file,block.start,block.end).progress(percentage => {
             console.log("percentage="+percentage * 100);
         }).then(function (fileMd5){
-            console.log("完成");
             block.md5 = fileMd5;
 
             //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
@@ -312,8 +311,12 @@ uploader.on('uploadSuccess', function (file) {
             data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'blockchunks':file.chunks},
             success: function (data) {
                 if(data.includes("success")){
+                    if (timerId) {
+                        // 清除定时器
+                        clearTimeout(timerId);
+                    }
                     $('#progressBar_up_text_'+file.id).text("完成");
-                    $('#progressBar_up_'+file.id).css('display', 'none');
+                    $('#progressBar_up_'+file.id).css('width', 100 + '%');
 
                     $('#delbtn_'+file.id).css('display', 'none');
                     $('#stopupbtn_'+file.id).css('display', 'none');
@@ -551,10 +554,13 @@ function settimeoutInlineBlockDisplayDot(...id){
     }
 }
 
+// 创建一个变量来保存定时器的ID
+let timerId;
+
 //这个timeout函数返回一个Promise，这个Promise将在给定的延迟时间后解析，如果函数执行成功，Promise将解析为成功消息。如果在执行函数时抛出错误，Promise将被拒绝并解析为错误消息。
 function timeout2fun(funsobj, delay) {
     return new Promise((resolve, reject) => {
-        setTimeout(() => {
+        timerId = setTimeout(() => {
             try {
                 for (var key in funsobj) {
                     if (funsobj.hasOwnProperty(key)) {

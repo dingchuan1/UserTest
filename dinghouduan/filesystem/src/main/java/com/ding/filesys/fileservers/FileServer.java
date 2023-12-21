@@ -48,7 +48,7 @@ public class FileServer {
         String configFilePath = fileUtils.getConfigFilePath(userid,"location");
         String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
         int count = 0;
-        String fileExit = fileUtils.checkFileExit(configFilePath,filename,filepath,filemd5);
+        String fileExit = fileUtils.checkFileExit(configFilePath,filename,filepath,filemd5,false);
         if("0".equals(fileExit)){
             returnCode = "200";
         }else if("1".equals(fileExit)){
@@ -80,7 +80,7 @@ public class FileServer {
         String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
         String translatedFilepath = fileUtils.removeStr(filepath);
         String translatedFilename = filename+"_"+translatedFilepath+"_"+chunk;
-        String fileExit = fileUtils.checkFileExit(configChunkFilePath,translatedFilename,filepath,filemd5);
+        String fileExit = fileUtils.checkFileExit(configChunkFilePath,translatedFilename,filepath,filemd5,false);
         if("0".equals(fileExit)){
             returnCode = "200";
         }else if("2".equals(fileExit)){
