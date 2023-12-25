@@ -107,4 +107,13 @@ public class FileController {
 
         return stateCode;
     }
+
+    @RequestMapping(value = "/readFolders",method = RequestMethod.GET)
+    public String readFolders(HttpServletRequest request){
+        String folderspath= request.getParameter("folderspath");
+        String userid = request.getParameter("id");
+        String data = fileServer.readFolders(userid,folderspath);
+
+        return data;
+    }
 }

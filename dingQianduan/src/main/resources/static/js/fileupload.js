@@ -531,6 +531,95 @@ function settimeoutChangeText(id,text){
     $('#'+id).text(''+text);
 }
 
+function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
+    const arr = folderspath.split('/');
+    fileBrowser.empty();
+    filebreadcrumb.empty();
+    $.ajax({
+        url: 'http://localhost:8080/readFolders',
+        type: "get",
+        data: {'folderspath':"\\"+folderspath+"\\",'servicesName':"upLoadFile"},
+        success: function (data) {
+            var menuli;
+            if(folderspath != ""){
+                menuli = $('<li class="breadcrumb-item"><a href="#">root</a></li>');
+                filebreadcrumb.append(menuli);
+                if (arr.length > 1) {
+                    for (let i = 0; i < arr.length; i++) {
+                        if(i!=arr.length-1){
+                            menuli = $('<li class="breadcrumb-item"><a href="#">'+ arr[i] +'</a></li>');
+                        }else {
+                            menuli = $('<li class="breadcrumb-item active" aria-current="page">'+ arr[i] +'</li>');
+                        }
+                        filebreadcrumb.append(menuli);
+                    }
+                }else {
+                    menuli = $('<li class="breadcrumb-item active" aria-current="page">'+ arr[0] +'</li>');
+                    filebreadcrumb.append(menuli);
+                }
+            }else {
+                menuli = $('<li class="breadcrumb-item active">root</li>');
+                var menuli1 = $('<li class="breadcrumb-item active" aria-current="page"></li>');
+                filebreadcrumb.append(menuli);
+                filebreadcrumb.append(menuli1);
+            }
+
+
+            console.log("renderFileBrowser:"+data);
+            let jsonObject = JSON.parse(data);
+            jsonObject.reverse(); // 反转数组
+            var ul = $('<ul class="list-group list-group-flush"></ul>');
+            jsonObject.forEach(function(folder) {
+                var li;
+                if (folder.type == 'folder' ) {
+                    li = $('<li class="list-group-item" style="height: 20px;"><a class="" href="#">' +
+                        '<img src="../bootstrap-icons-1.11.1/folder-fill.svg" alt="Logo" width="15" height="15" class="d-inline-block align-text-top">' +
+                        folder.name + '</a></li>');
+                    li.on('click', function() {  });
+                } else {
+                    li = $('<li class="list-group-item" style="height: 20px;">' +
+                            '<input className="form-check-input me-1" type="checkbox" value="" id="'+folder.name+'_Checkbox">' +
+                            '<label className="form-check-label" htmlFor="'+folder.name+'_Checkbox">'+folder.name+'</label>' +
+                        '</li>');
+                }
+                ul.append(li);
+            });
+            fileBrowser.append(ul);
+
+        },
+        error: function (data) {
+
+        }
+    })
+}
+
+//获取默认文件夹路径
+function getDefaultFolderPath(){
+    var defaultFolderPath = $('#filebreadcrumb li');
+    var liTextArray = defaultFolderPath.map(function() {
+        return $(this).text();
+    }).get();
+    var path = liTextArray.join('\\');
+    return path;
+}
+
+function setDefaultFolderPath(inputId){
+    var defaultFolderPathInput = $('#'+inputId);
+    defaultFolderPathInput.val(getDefaultFolderPath());
+}
+
+//文件夹名称是否包含违禁字符
+function isFolderNameValid(folderName) {
+    // 定义违禁字符集合
+    const disallowedCharacters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+
+    // 创建正则表达式，匹配任何上述违禁字符
+    const regex = new RegExp(`[${disallowedCharacters.join('')}]`);
+
+    // 检查文件夹名称是否匹配正则表达式
+    return regex.test(folderName);
+}
+
 //不够解耦暂时不用
 function settimeoutChangeBtn(btn1,btn2,btn3){
     $('#'+btn1).css('display','none');

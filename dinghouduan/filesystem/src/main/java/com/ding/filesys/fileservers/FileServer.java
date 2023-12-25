@@ -140,4 +140,9 @@ public class FileServer {
         }
         return recode;
     }
+
+    public String readFolders(String userid,String folderspath){
+        String data = fileUtils.readFoldersToBeanToString(folderspath,userid);
+        return data;
+    }
 }

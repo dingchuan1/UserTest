@@ -1,8 +1,10 @@
 package com.ding.filesys.fileutil;
 
+import com.ding.filesys.addfile.FolderBean;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.FileUtils;
 import org.w3c.dom.Document;
@@ -17,14 +19,14 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SysFileUtils {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -100,7 +102,7 @@ public class SysFileUtils {
         Map<String,Object> xmlMap = SysFileUtils.redFileXml();
         String configFilePath = "";
         if("location".equals(type)){
-            configFilePath = xmlMap.get("location")+"\\"+userid;
+            configFilePath = xmlMap.get("location")+"\\"+userid+"\\root";
         }
         if("tmplocation".equals(type)){
             configFilePath = xmlMap.get("tmplocation")+"\\"+userid;
@@ -553,9 +555,68 @@ public class SysFileUtils {
         return "0";
     }
 
-    //清除特殊字符“/”和“\”,"$","*"
+    /*
+        获取用户文件信息，创建java对象并转换为json格式的字符串
+     */
+    public String readFoldersToBeanToString(String folderspath,String userid){
+        String folderpath = getSaveFilePath(userid,"location") + folderspath;
+        String jsonString = "";
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT); // 美化输出格式
+        try {
+            jsonString = objectMapper.writeValueAsString(readFolder(folderpath));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return "500";
+//            throw new RuntimeException(e);
+        }
+        return jsonString;
+    }
+
+    private List<FolderBean> readFolder(String folderPath){
+        List<FolderBean> folders = new ArrayList<>();
+        try (Stream<Path> paths = Files.list(Paths.get(folderPath))) {
+            folders = paths
+                    .map(path -> readFiles(path))
+                    .collect(Collectors.toList());
+            // 现在folders列表中包含了文件夹中的所有文件和子文件夹信息
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return folders;
+    }
+    private FolderBean readFiles(Path path) {
+        String fileName = path.getFileName().toString(); // 获取文件名（不包括路径）
+        String type = "";// 默认类型为文件
+        if(Files.isDirectory(path)){
+            return new FolderBean(fileName,"folder","0");
+
+        }else {
+            try {
+                type = "file";
+                long filesize = Files.size(path);
+                return new FolderBean(fileName,type,filesize+"");
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+        //清除特殊字符“/”和“\”,"$","*"
     public String removeStr(String str){
         String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "^");
         return outstr;
+    }
+
+    //转换文件大小单位,弃用不能精确的保留小数，需要修改
+    public static String displayFileSize(Long fileSize) {
+        String[] units = {"bytes", "KB", "MB", "GB"};
+        int i = 0;
+        while (fileSize >= 1024 && i < 3) {
+            fileSize /= 1024;
+            i++;
+        }
+        return String.format("%.1f %s", fileSize.doubleValue(), units[i]);
     }
 }

@@ -144,4 +144,15 @@ public class LonginControl{
         String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
         return res;
     }
+
+    @RequestMapping(value = "/readFolders", method = RequestMethod.GET)
+    public String readFolders(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        String tokenValue = jumpTool.getTokenValue(request);
+        String folderspath= request.getParameter("folderspath");
+        String parameters = "uaa/readFolders?&servicesName="+servicesName+
+                "&user_satoken="+tokenValue+"&folderspath="+folderspath;
+        String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
+        return res;
+    }
 }
