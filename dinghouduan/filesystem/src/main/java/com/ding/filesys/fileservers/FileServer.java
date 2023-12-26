@@ -107,7 +107,7 @@ public class FileServer {
     }
 
     public String mergeToFile(String userid,String filename,String filepath,String chunks,String filemd5){
-        String filePath = fileUtils.getSaveFilePath(userid,"location") + filepath;
+        String filePath = fileUtils.getSaveFilePath(userid,"location") + "\\"+filepath;
         String tpmFilename = filename+ "_"+fileUtils.removeStr(filepath);
         String chunkFilePath = fileUtils.getSaveFilePath(userid,"tmplocation");
         String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
@@ -143,6 +143,11 @@ public class FileServer {
 
     public String readFolders(String userid,String folderspath){
         String data = fileUtils.readFoldersToBeanToString(folderspath,userid);
+        return data;
+    }
+
+    public String createFolder(String userid,String folderspath){
+        String data = fileUtils.createFolder(folderspath,userid);
         return data;
     }
 }

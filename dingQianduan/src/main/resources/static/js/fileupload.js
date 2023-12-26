@@ -21,6 +21,9 @@ WebUploader.Uploader.register({
     'before-send':'beforeSend'
 },{
     beforeSendFile:function(file){
+
+        var defluatfilepath = getDefaultFolderPath();
+        defluatfilepath = spliceroot(defluatfilepath);
         //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
         var task = WebUploader.Base.Deferred();
         $('#readfiletext_'+ file.id).text('正在读取文件');
@@ -48,7 +51,7 @@ WebUploader.Uploader.register({
             $.ajax({
                 url: 'http://localhost:8080/GetFileState',
                 type: "get",
-                data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"file"},
+                data: {'filename':file.name,'filemd5':file.md5,'filepath':defluatfilepath,'servicesName':"upLoadFile",'checktype':"file"},
                 success: function (data) {
                     if(data == "200"){
                         //分片文件在服务器中不存在，就是正常流程
@@ -80,6 +83,9 @@ WebUploader.Uploader.register({
     beforeSend:function(block){
         console.log("beforeSend");
         var file=block.file;
+
+        var defluatfilepath = getDefaultFolderPath();
+        defluatfilepath = spliceroot(defluatfilepath);
         file.chunks = block.chunks;
         var task = WebUploader.Base.Deferred();
         uploader.md5File(file,block.start,block.end).progress(percentage => {
@@ -91,7 +97,7 @@ WebUploader.Uploader.register({
             $.ajax({
                 url: 'http://localhost:8080/GetFileState',
                 type: "get",
-                data: {'filename':file.name,'filemd5':block.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'checktype':"chunk",'blockchunk':block.chunk},
+                data: {'filename':file.name,'filemd5':block.md5,'filepath':defluatfilepath,'servicesName':"upLoadFile",'checktype':"chunk",'blockchunk':block.chunk},
                 success: function (data) {
                     if(data == "200"){
                         //该分片文件在服务器中不存在，就是正常流程
@@ -288,6 +294,8 @@ uploader.on('uploadBeforeSend',function(block,data){
     if(block.pass){
        return;
     }
+    var defluatfilepath = getDefaultFolderPath();
+    defluatfilepath = spliceroot(defluatfilepath);
     var file = block.file;
     //data可以携带参数到后端
     data.name = file.name;//文件名字
@@ -297,7 +305,7 @@ uploader.on('uploadBeforeSend',function(block,data){
     data.end = block.end;//分片数据块在整体文件的结束位置
     data.chunk = block.chunk;//分片的索引位置
     data.chunks = block.chunks;//整个文件总共分了多少片
-    data.filepath = "\\test\\";
+    data.filepath = defluatfilepath;
 });
 
 // 上传返回结果
@@ -305,10 +313,12 @@ uploader.on('uploadSuccess', function (file) {
     if(file.pass){
 
     }else{
+        var defluatfilepath = getDefaultFolderPath();
+        defluatfilepath = spliceroot(defluatfilepath);
         $.ajax({
             url: 'http://localhost:8080/MergeFile',
             type: "get",
-            data: {'filename':file.name,'filemd5':file.md5,'filepath':"\\test\\",'servicesName':"upLoadFile",'blockchunks':file.chunks},
+            data: {'filename':file.name,'filemd5':file.md5,'filepath':defluatfilepath,'servicesName':"upLoadFile",'blockchunks':file.chunks},
             success: function (data) {
                 if(data.includes("success")){
                     if (timerId) {
@@ -323,6 +333,8 @@ uploader.on('uploadSuccess', function (file) {
                     $('#cancelbtn_'+file.id).css('display', 'none');
                     $('#reUploadbtn_'+file.id).css('display', 'block');
                     $('#readfiletext_'+file.id).text("已上传");
+                    const defluatfilepath = spliceroot(getDefaultFolderPath());
+                    renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),defluatfilepath);
                 }
 
             },
@@ -531,8 +543,74 @@ function settimeoutChangeText(id,text){
     $('#'+id).text(''+text);
 }
 
+//创建文件夹方法
+function createFolder(){
+    const alertPlaceholder = document.getElementById('errFoldername');
+    const alert = (mess1,mess2,type) => {
+        const wrapper = document.createElement('div')
+        wrapper.innerHTML = [
+            `<div class="alert alert-${type} alert-dismissible fade show"  role="alert">`,
+            `   <strong>${mess1}</strong>${mess2} `,
+            '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+            '</div>'
+        ].join('')
+        alertPlaceholder.append(wrapper)
+    }
+    var folderPath = $('#folderInputGroup1').val();
+    var folderName = $('#folderInputGroup2').val();
+    if(folderName==""){
+        alert("文件夹名不能为空!","","warning");
+        document.getElementById('folderInputGroup2').focus();
+        return;
+    }else if(folderName.replace(/ /g, "") =="."){
+        alert("文件夹名不能为单独的一个[.]!","","warning");
+        document.getElementById('folderInputGroup2').focus();
+        return;
+    }
+    if(isFolderNameValid(folderName)){
+        alert("文件夹名包含违禁字符",",文件夹名称不能包含['<', '>', ':', '\"', '/', '\\\\'," +
+            "'|', '?', '*']","warning");
+        document.getElementById('folderInputGroup2').focus();
+        return;
+    }else {
+        folderPath = spliceroot(folderPath);
+        const foldertruePath = folderPath+ '\\' + folderName;
+
+        $.ajax({
+            url: 'http://localhost:8080/createFolder',
+            type: "get",
+            data: {'folderspath':"\\"+foldertruePath+"\\",'servicesName':"upLoadFile"},
+            success: function (data) {
+                if(data=="200"){
+                    document.getElementById('createFolderCloseBtn').click();
+                    renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),folderPath);
+                }else {
+                    alert("创建文件夹失败!",","+data,"warning");
+                }
+            }
+        })
+    }
+}
+
+//处理路径中第一个是root
+function spliceroot(folderPath){
+    var retrunPath;
+    const arr = folderPath.split('\\');
+    if(arr.length == 1 || arr.length == 0){
+        retrunPath = "";
+    }else {
+        if(arr[0] == "root"){
+            arr.splice(0, 1);
+            const foldertruePath1 = arr.join('\\');
+            retrunPath = foldertruePath1;
+        }else {
+            retrunPath = folderPath;
+        }
+    }
+    return retrunPath;
+}
 function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
-    const arr = folderspath.split('/');
+    const arr = folderspath.split('\\');
     fileBrowser.empty();
     filebreadcrumb.empty();
     $.ajax({
@@ -542,17 +620,20 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
         success: function (data) {
             var menuli;
             if(folderspath != ""){
-                menuli = $('<li class="breadcrumb-item"><a href="#">root</a></li>');
+                menuli = $('<li class="breadcrumb-item" onclick="changemuneFolder(this);"><a href="#">root</a></li>');
                 filebreadcrumb.append(menuli);
                 if (arr.length > 1) {
                     for (let i = 0; i < arr.length; i++) {
                         if(i!=arr.length-1){
-                            menuli = $('<li class="breadcrumb-item"><a href="#">'+ arr[i] +'</a></li>');
+                            menuli = $('<li class="breadcrumb-item" onclick="changemuneFolder(this);"><a href="#">'+ arr[i] +'</a></li>');
                         }else {
                             menuli = $('<li class="breadcrumb-item active" aria-current="page">'+ arr[i] +'</li>');
                         }
                         filebreadcrumb.append(menuli);
                     }
+                // }else if(arr.length > 1){
+                //     menuli = $('<li class="breadcrumb-item active" aria-current="page">'+ arr[1] +'</li>');
+                //     filebreadcrumb.append(menuli);
                 }else {
                     menuli = $('<li class="breadcrumb-item active" aria-current="page">'+ arr[0] +'</li>');
                     filebreadcrumb.append(menuli);
@@ -572,7 +653,7 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
             jsonObject.forEach(function(folder) {
                 var li;
                 if (folder.type == 'folder' ) {
-                    li = $('<li class="list-group-item" style="height: 20px;"><a class="" href="#">' +
+                    li = $('<li class="list-group-item" style="height: 20px;"><a class="" href="#" onclick="changeFolder(this);">' +
                         '<img src="../bootstrap-icons-1.11.1/folder-fill.svg" alt="Logo" width="15" height="15" class="d-inline-block align-text-top">' +
                         folder.name + '</a></li>');
                     li.on('click', function() {  });
@@ -591,6 +672,26 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
 
         }
     })
+}
+function changemuneFolder(obj){
+    var foldertext = $(obj).prevAll('li').addBack(obj).get().map(function(li) {
+                    return $(li).text();
+                }).join("\\");
+    var folderPath = spliceroot(foldertext);
+    renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),folderPath);
+}
+function changeFolder(obj){
+    var foldername = $(obj).text();
+    var truepath;
+    var defaultFolderPath = getDefaultFolderPath();
+    defaultFolderPath = spliceroot(defaultFolderPath);
+    if(defaultFolderPath==""){
+        truepath = foldername;
+    }else {
+        truepath = defaultFolderPath + "\\" + foldername;
+    }
+
+    renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),truepath);
 }
 
 //获取默认文件夹路径

@@ -509,7 +509,7 @@ public class SysFileUtils {
     //合并上传的分片
     public String mergeChunks(String fileName,String tmpFilename,int chunks,String tmpfilePath,String userPath) throws FileNotFoundException {
         File userPathdir = new File(userPath);
-        File finalFile = new File(userPath + "/" + fileName);
+        File finalFile = new File(userPath + "\\" + fileName);
         FileOutputStream fos = null;
         BufferedOutputStream  os = null;
         try {
@@ -555,6 +555,30 @@ public class SysFileUtils {
         return "0";
     }
 
+    public String createFolder(String folderspath,String userid) {
+        String folderpath = getSaveFilePath(userid, "location") + folderspath;
+        Path path = Paths.get(folderpath);
+//        if (!Files.exists(path)) {
+//            return "不是一个正确的路径";
+//        }
+        // 判断是文件还是文件夹
+        if (Files.isRegularFile(path)) {
+            return "不是一个正确的文件夹";
+        }
+
+        if (Files.isDirectory(path)) {
+            return "文件夹已存在";
+        }else {
+            try {
+                Files.createDirectories(path);
+                return "200";
+            } catch (IOException e) {
+                e.printStackTrace();
+
+                return "文件夹创建出错";
+            }
+        }
+    }
     /*
         获取用户文件信息，创建java对象并转换为json格式的字符串
      */
@@ -603,6 +627,7 @@ public class SysFileUtils {
         }
 
     }
+
         //清除特殊字符“/”和“\”,"$","*"
     public String removeStr(String str){
         String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "^");

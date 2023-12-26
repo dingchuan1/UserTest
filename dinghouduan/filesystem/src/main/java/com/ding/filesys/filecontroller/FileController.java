@@ -116,4 +116,13 @@ public class FileController {
 
         return data;
     }
+
+    @RequestMapping(value = "/createFolder",method = RequestMethod.GET)
+    public String createFolder(HttpServletRequest request){
+        String folderspath= request.getParameter("folderspath");
+        String userid = request.getParameter("id");
+        String data = fileServer.createFolder(userid,folderspath);
+
+        return data;
+    }
 }

@@ -186,6 +186,19 @@ public class UserController {
         return res;
     }
 
+    @RequestMapping(value = "/createFolder",method = RequestMethod.GET)
+    public String createFolder(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return "500^请登录或没有权限";
+        }
+        String folderspath= request.getParameter("folderspath");
+        String parameters = "filesys/createFolder?id="+StpUtil.getLoginId()
+                +"&folderspath="+folderspath;
+        String res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
+        return res;
+    }
+
     // 全局异常拦截（拦截项目中的NotLoginException异常）
     @ExceptionHandler(NotLoginException.class)
     public SaResult handlerNotLoginException(NotLoginException nle)
