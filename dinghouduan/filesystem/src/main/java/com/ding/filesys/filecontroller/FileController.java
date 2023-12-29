@@ -125,4 +125,13 @@ public class FileController {
 
         return data;
     }
+
+    @RequestMapping(value = "/removeFile",method = RequestMethod.GET)
+    public String removeFile(HttpServletRequest request){
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String userid = request.getParameter("id");
+        String data = fileServer.removeFile(userid,filepath,filename);
+        return data;
+    }
 }

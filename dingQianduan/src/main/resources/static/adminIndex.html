@@ -12,7 +12,7 @@
 <body>
 
 <div class="container-xl">
-    <div class="row row-cards">
+    <div class="row row-cards align-items-start">
         <div class="col-md-2"></div>
         <div class="col-2">
             <button type="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#uploadoffcanvas">
@@ -27,24 +27,24 @@
         <div class="col-md-2"></div>
     </div>
     <!-- 文件层次导航栏 -->
-    <div class="row row-cards">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
-            <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
-                <ol id="filebreadcrumb" class="breadcrumb">
-                </ol>
-            </nav>
+        <div class="row row-cards">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                    <ol id="filebreadcrumb" class="breadcrumb">
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-2"></div>
         </div>
-        <div class="col-md-2"></div>
-    </div>
-    <!-- 已有文件展示 -->
-    <div class="row row-cards">
-        <div class="col-md-2"></div>
-        <div class="col-md-8">
-            <div id="fileBrowser" class="card" ></div>
+        <!-- 已有文件展示 -->
+        <div class="row row-cards">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div id="fileBrowser" class="card"></div>
+            </div>
+            <div class="col-md-2"></div>
         </div>
-        <div class="col-md-2"></div>
-    </div>
     <!-- 上传窗口 -->
     <div class="offcanvas offcanvas-bottom" id="uploadoffcanvas" tabindex="-1" style="height: 50%;">
         <div class="offcanvas-header">

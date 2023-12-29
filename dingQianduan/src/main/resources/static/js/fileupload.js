@@ -347,8 +347,11 @@ uploader.on('uploadSuccess', function (file) {
 
 //重新上传
 function reUpload(obj){
+
     const index = obj.getId.indexOf("_");
     const fileId = obj.getId.slice(index+1);
+    uploader.clearQueue(fileId);
+    uploader.addFile(fileId);
     uploader.upload(fileId);
 }
 
@@ -496,6 +499,21 @@ function stopUp(t){
     }
 
 }
+
+//删除服务器上的文件
+function removeSerFileById(obj){
+   var fileId = findFileIdByDom(obj);
+   var filePath = spliceroot(getDefaultFolderPath());
+   $.ajax({
+       url: 'http://localhost:8080/removeFile',
+       type: "get",
+       data: {'filepath':"\\"+filePath+"\\",'filename':fileId,'servicesName':"upLoadFile"},
+       success: function (data) {
+           renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),filePath);
+       }
+   })
+}
+
 
 function findFileIdByDom(t){
     // 获取元素的ID
@@ -649,19 +667,32 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
             console.log("renderFileBrowser:"+data);
             let jsonObject = JSON.parse(data);
             jsonObject.reverse(); // 反转数组
-            var ul = $('<ul class="list-group list-group-flush"></ul>');
+            var ul = $('<div class="list-group list-group-flush list-group-hoverable"></div>');
             jsonObject.forEach(function(folder) {
                 var li;
                 if (folder.type == 'folder' ) {
-                    li = $('<li class="list-group-item" style="height: 20px;"><a class="" href="#" onclick="changeFolder(this);">' +
+                    li = $('<div class="list-group-item" style="padding:5px 20px;height: 30px;">' +
+                        '<div class="row align-items-center">' +
+                        '<a class="" href="#" onclick="changeFolder(this);">' +
                         '<img src="../bootstrap-icons-1.11.1/folder-fill.svg" alt="Logo" width="15" height="15" class="d-inline-block align-text-top">' +
-                        folder.name + '</a></li>');
-                    li.on('click', function() {  });
+                        folder.name + '</a></div></div>');
+                    //li.on('click', changeFolder(this));
                 } else {
-                    li = $('<li class="list-group-item" style="height: 20px;">' +
-                            '<input className="form-check-input me-1" type="checkbox" value="" id="'+folder.name+'_Checkbox">' +
-                            '<label className="form-check-label" htmlFor="'+folder.name+'_Checkbox">'+folder.name+'</label>' +
-                        '</li>');
+                    li = $('<div class="list-group-item" style="padding:5px 20px;height: 30px;">' +
+                        '<div class="row align-items-center">' +
+                            '<div class="col-auto">' +
+                                '<input className="form-check-input me-1" type="checkbox" value="" id="checkbox_'+folder.name+'">' +
+                                '<label className="form-check-label" htmlFor="checkbox_'+folder.name+'">'+folder.name+'</label>' +
+                            '</div>' +
+                            '<div class="col-6">' +
+
+                            '</div>' +
+                            '<div class="col-2">' +
+                                '<button id="removeBtn_'+folder.name+'" type="button" onclick="removeSerFileById(this);" class="list-group-item-actions btn-icon" >' +
+                                    '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
+                                '</button>' +
+                            '</div>' +
+                        '</div></div>');
                 }
                 ul.append(li);
             });
@@ -673,6 +704,7 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
         }
     })
 }
+//变更导航文件夹栏
 function changemuneFolder(obj){
     var foldertext = $(obj).prevAll('li').addBack(obj).get().map(function(li) {
                     return $(li).text();
@@ -680,6 +712,7 @@ function changemuneFolder(obj){
     var folderPath = spliceroot(foldertext);
     renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),folderPath);
 }
+//变更已有文件显示内容
 function changeFolder(obj){
     var foldername = $(obj).text();
     var truepath;

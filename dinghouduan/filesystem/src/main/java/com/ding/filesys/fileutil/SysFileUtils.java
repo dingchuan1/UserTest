@@ -141,17 +141,32 @@ public class SysFileUtils {
         return  count;
     }
 
-    public int removeTmpMes(String fileName,String configFilePath,String filePath){
+    public int removeMes(String truename,String configFilePath,String filePath,String type){
         int recode = 0;
         File configFile = new File(configFilePath);
-        String truename = fileName + "_"+ removeStr(filePath);
+        //String truename = fileName + "_"+ removeStr(filePath);
         try {
             List<String> lines = readLines(configFile,false);
             for(int i=0;i<lines.size();i++){
                 if(lines.get(i).contains(truename)){
-                    lines.remove(i);
-                    recode++;
-                    i--;
+                    if("tmp".equals(type)){
+                        lines.remove(i);
+                        recode++;
+                        i--;
+                    }else if("local".equals(type)){
+                        String[] parts = lines.get(i).split(":");
+                        for (String part : parts) {
+                            String[] parts1 = part.split(",");
+                            String savefilepath = removeStrAndNull("\\" + parts1[0] + "\\");
+                            String getfilePath = removeStrAndNull(filePath);
+                            if (savefilepath.equals(getfilePath)) {
+                                lines.remove(i);
+                                recode++;
+                                i--;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             if(lines.get(1).charAt(0) == ','){
@@ -164,13 +179,33 @@ public class SysFileUtils {
         return recode;
     }
 
-    public int removeTmpFile(String fileName,String tmpfilePath,int chunks,String filePath){
+    public int removeFile(String truename,String filePath,int chunks,String type){
         int recode = 0;
         int waitconts = 0;
-        String truename = fileName + "_"+ removeStr(filePath);
-        for(int i=0;i<chunks;i++){
-            File tmpfile = new File(tmpfilePath,truename+"_"+i);
-            while(!tmpfile.exists()){
+        if(type.equals("tmp")){
+            for(int i=0;i<chunks;i++){
+                File tmpfile = new File(filePath,truename+"_"+i);
+                while(!tmpfile.exists()){
+                    try {
+                        Thread.sleep(100);
+                        //等待次数
+                        waitconts++;
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if(waitconts>10){
+                        recode--;
+                        break;
+                    }
+                }
+                if(i==recode){
+                    tmpfile.delete();
+                }
+                recode++;
+            }
+        } else if (type.equals("local")) {
+            File file = new File(filePath,truename);
+            while(!file.exists()){
                 try {
                     Thread.sleep(100);
                     //等待次数
@@ -183,11 +218,11 @@ public class SysFileUtils {
                     break;
                 }
             }
-            if(i==recode){
-                tmpfile.delete();
+            if(recode >= 0){
+                file.delete();
             }
-            recode++;
         }
+
         return recode;
     }
 
@@ -200,8 +235,36 @@ public class SysFileUtils {
      */
     public String removeTmpFileAndTmpMes(String fileName,String tmpfilePath,int chunks,String filePath,String configFilePath){
         String recode = "";
-        int recfilecode = removeTmpFile(fileName,tmpfilePath,chunks,filePath);
-        int recmescode = removeTmpMes(fileName,configFilePath,filePath);
+        String truename = fileName + "_"+ removeStr(filePath);
+        int recfilecode = removeFile(truename,tmpfilePath,chunks,"tmp");
+        int recmescode = removeMes(truename,configFilePath,"","tmp");
+        if(recfilecode<=0){
+            return "300_"+recfilecode;
+        }
+        if(recmescode==0){
+            return "400";
+        }
+        if(recfilecode != recmescode){
+            return "500";
+        }
+        if(recfilecode > 0){
+            recode = "success_"+recfilecode;
+        }
+        return  recode;
+    }
+
+    /*
+        retrun:
+            "300_$":文件删除出问题，$=0没有删除，$<0删除有错
+            "400":文件信息删除出问题。
+            "success_$":成功，$成功数量
+     */
+    public String removeLocalFileAndLocalMes(String userid,String filepath,String filename){
+        String recode = "";
+        String configFile = getConfigFilePath(userid,"location");
+        String saveFilepath = getSaveFilePath(userid,"location") + filepath;
+        int recfilecode = removeFile(filename,saveFilepath,0,"local");
+        int recmescode = removeMes(filename,configFile,filepath,"local");
         if(recfilecode<=0){
             return "300_"+recfilecode;
         }
@@ -309,8 +372,8 @@ public class SysFileUtils {
         String configFilePath = getConfigFilePath(userid,type);
         //ObjectMapper的内存开销很大
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> jsonData = new HashMap<>();
-        Map<String, String> jsonData1 = new HashMap<>();
+        Map<String, Object> jsonData = new HashMap<>();
+        Map<String, Object> jsonData1 = new HashMap<>();
         File configFile = new File(configFilePath);
         String relseFilePath = removeStr(filePath);
         String relseFileName = "";
@@ -329,7 +392,7 @@ public class SysFileUtils {
                 //因为FileUtils.readLines线程不安全，所以需要加锁确保信息都写入。
                 List<String> lines = readLines(configFile,false);
 
-                jsonData.put(relseFileName, objectMapper.writeValueAsString(jsonData1));
+                jsonData.put(relseFileName, jsonData1);
                 String jsonString = objectMapper.writeValueAsString(jsonData);
 
                 if(lines.size()==2){
@@ -579,6 +642,9 @@ public class SysFileUtils {
             }
         }
     }
+
+
+
     /*
         获取用户文件信息，创建java对象并转换为json格式的字符串
      */
@@ -631,6 +697,12 @@ public class SysFileUtils {
         //清除特殊字符“/”和“\”,"$","*"
     public String removeStr(String str){
         String outstr = str.replaceAll("[^a-zA-Z0-9 ]", "^");
+        return outstr;
+    }
+    //清除特殊字符“/”和“\”,"$","*"
+    public String removeStrAndNull(String str){
+        String outstr1 = str.replace("\"", "");
+        String outstr = outstr1.replace("\\\\", "\\");
         return outstr;
     }
 

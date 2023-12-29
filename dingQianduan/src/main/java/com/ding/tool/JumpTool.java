@@ -34,7 +34,7 @@ public class JumpTool {
         InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
         //2、获取到要访问的地址
         String url = info.getHomePageUrl();
-        System.out.println("跳转地址："+ url);
+        System.out.println("跳转地址："+ url+",,跳转参数:"+parameters);
         //3、通过restTemplate访问
         retruncode = restTemplate.getForObject(url + parameters, String.class);
         return retruncode;

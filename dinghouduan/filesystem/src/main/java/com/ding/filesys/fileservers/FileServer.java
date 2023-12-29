@@ -150,4 +150,9 @@ public class FileServer {
         String data = fileUtils.createFolder(folderspath,userid);
         return data;
     }
+
+    public String removeFile(String userid,String filepath,String filename){
+        String data = fileUtils.removeLocalFileAndLocalMes(userid,filepath,filename);
+        return data;
+    }
 }

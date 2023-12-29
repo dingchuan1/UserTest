@@ -199,6 +199,20 @@ public class UserController {
         return res;
     }
 
+    @RequestMapping(value = "/removeFile",method = RequestMethod.GET)
+    public String removeFile(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return "500^请登录或没有权限";
+        }
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String parameters = "filesys/removeFile?id="+StpUtil.getLoginId()
+                +"&filepath="+filepath+"&filename="+filename;
+        String res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
+        return res;
+    }
+
     // 全局异常拦截（拦截项目中的NotLoginException异常）
     @ExceptionHandler(NotLoginException.class)
     public SaResult handlerNotLoginException(NotLoginException nle)
