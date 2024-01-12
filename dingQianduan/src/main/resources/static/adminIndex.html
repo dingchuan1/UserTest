@@ -46,68 +46,101 @@
             <div class="col-md-2"></div>
         </div>
     <!-- 上传窗口 -->
-    <div class="offcanvas offcanvas-bottom" id="uploadoffcanvas" tabindex="-1" style="height: 50%;">
+    <div class="offcanvas offcanvas-bottom" id="uploadoffcanvas" tabindex="-1" style="height: 60%;">
         <div class="offcanvas-header">
-            <h5 class="modal-title">文件上传</h5>
+
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body" style="width: 100%;height: 100%;overflow: scroll">
-            <div class="container-fluid">
-                <div class="row row-cards">
-                    <div class="col-12">
-                        <div class="card">
-                            <div id="fileList" class="table-responsive">
-                                <table class="table ">
-                                    <thead>
-                                    <tr>
-                                        <th scope="col">文件名</th>
-                                        <th scope="col">文件信息</th>
-                                        <th scope="col">文件状态</th>
-                                        <th scope="col" style="">上传进度</th>
-                                        <th scope="col" style=""></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
+            <div class="card">
+                <ul class="nav nav-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a id="toUpBody" href="#upBody" class="nav-link active" data-bs-toggle="tab">
+                            <img src="../bootstrap-icons-1.11.1/cloud-upload.svg">
+                            <h5 class="modal-title">文件上传</h5>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="toLoadedBody" href="#loadedBody" class="nav-link" data-bs-toggle="tab">
+                            <img src="../bootstrap-icons-1.11.1/clouds.svg">
+                            <h5 class="modal-title">上传完成</h5>
+                        </a>
+                    </li>
 
-                                    </tbody>
-                                </table>
+                </ul>
+                <div class="calendar-body">
+                    <div class="tab-content" style="width: 100%;">
+                        <div id="upBody" class="container-fluid tab-pane active show">
+                            <div class="row row-cards">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div id="fileList" class="table-responsive">
+                                            <table class="table ">
+                                                <thead>
+                                                <tr>
+                                                    <th scope="col">文件名</th>
+                                                    <th scope="col">文件信息</th>
+                                                    <th scope="col">文件状态</th>
+                                                    <th scope="col" style="">上传进度</th>
+                                                    <th scope="col" style=""></th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="row row-cards" style="height: 50px;">
+                                <div class="col-2">
+                                    <div id="filePicker" class="" style="display: inline-block;">选择文件</div>
+                                </div>
+                                <div class="col-2">
+                                    <div id="uploadBtn" class="btn" style="display: inline-block;"
+                                         onclick="uploadFile()">
+                                        开始上传
+                                    </div>
+                                </div>
+                                <div class="col-2">
+                                    <div id="fileDle" onclick="delFile()" class="btn" style="display: inline-block;">
+                                        撤销全部文件
+                                    </div>
+                                </div>
+                                <div class="col-6">
+
+                                </div>
                             </div>
                         </div>
+                        <div id="loadedBody" class="container-fluid tab-pane">
+                            <div class="row row-cards">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div id="loadedfileList" class="table-responsive">
+                                            <table class="table ">
+                                                <thead>
+                                                <tr>
+                                                    <th scope="col">文件名</th>
+                                                    <th scope="col">文件信息</th>
+                                                    <th scope="col">文件状态</th>
+                                                    <th scope="col" style=""></th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
 
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="row row-cards" style="height: 50px;">
-                <div class="col-2">
-                    <div id="filePicker" class="" style="display: inline-block;">选择文件</div>
-                </div>
-                <div class="col-2">
-                    <div id="uploadBtn" class="btn" style="display: inline-block;" onclick="uploadFile()">
-                        开始上传
-                    </div>
-                </div>
-                <div class="col-2">
-                    <div id="fileDle" onclick="delFile()" class="btn" style="display: inline-block;">
-                        撤销全部文件
-                    </div>
-                </div>
-                <div class="col-6">
 
-                </div>
             </div>
-            <div class="info"></div>
-            <div id="uploadProgress" class="progress-bar" style="display: none">
-                <div id="uploadProgressBar" class="progress-bar-fill">正在上传文件<p>0%</p></div>
-            </div>
-            <div class="display-area">
-                <div class="progress progress-li">
-                    <div class="progress-bar-text-li">正在上传文件<span>0%</span></div>
-                    <div class="progress-bar bg-green progress-bar-li" style='width:0%' role='progressbar'
-                         aria-valuenow='0'
-                         aria-valuemin='0' aria-valuemax='100'></div>
-                </div>
-            </div>
-
             <input type="text" id="delfilelist" style="display: none;">
         </div>
     </div>

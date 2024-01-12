@@ -335,6 +335,12 @@ uploader.on('uploadSuccess', function (file) {
                     $('#readfiletext_'+file.id).text("已上传");
                     const defluatfilepath = spliceroot(getDefaultFolderPath());
                     renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),defluatfilepath);
+                    let timeoutFuns = {
+                        fun1 : {funname:'setfiledisplay',value1:''+ file.id,value2:'none'},
+                        fun2 : {funname:'moveFileToLoadedList',value1:''+file.id,value2:''+defluatfilepath,value3:''+file.size,value4:''+file.name,value5:''+file.lastModifiedDate}
+                    }
+                    timeout2fun(timeoutFuns,1000);
+
                 }
 
             },
@@ -345,13 +351,18 @@ uploader.on('uploadSuccess', function (file) {
     }
 });
 
+//设置文件display样式
+function setfiledisplay(fileid,style){
+    let filetr = $('#'+ fileid);
+    filetr.css('display',''+style);
+}
+
+
 //重新上传
 function reUpload(obj){
-
-    const index = obj.getId.indexOf("_");
-    const fileId = obj.getId.slice(index+1);
-    uploader.clearQueue(fileId);
-    uploader.addFile(fileId);
+    const fileId = findFileIdByDom(obj);
+    // uploader.clearQueue(fileId);
+    // uploader.addFile(fileId);
     uploader.upload(fileId);
 }
 
@@ -374,8 +385,7 @@ function fileAlert(fileId){
 
 //提示框后续操作
 function setuploaderState(flag,obj){
-    const index = obj.getId.indexOf("_");
-    const fileId = obj.getId.slice(index+1);
+    const fileId = findFileIdByDom(obj);
     const alertPlaceholder = document.getElementById("progressBar_up_text_"+fileId).parentElement;
     if(flag){
         uploader.upload(fileId);
@@ -411,11 +421,84 @@ function fileClick(fileid){
 
  */
 function delFileById(t){
-    var fileid = findFileIdByDom(t);
-    var flieTr = document.getElementById(fileid+"");
+    let fileid = findFileIdByDom(t);
+    let flieTr = document.getElementById(fileid+"");
     flieTr.parentNode.removeChild(flieTr);
     uploader.removeFile(fileId,true);
 }
+
+//删除正在上传中已完成的文件，添加到已完成列表中
+function moveFileToLoadedList(fileid,filepath,filesize,filename,filelastModifiedDate){
+    let loadedfileList = document.getElementById("loadedfileList").getElementsByTagName('table');
+    let trList = loadedfileList[0].getElementsByTagName('tr');
+    let cont = 0;
+    for (let i = 0; i < trList.length; i++) {
+        if(trList[i].id.includes(fileid)){
+            if(filepath == trList[i].filePath){
+                trList[i].parentNode.removeChild(trList[i]);
+            }
+            cont++;
+        }
+    }
+    addFileToLoadedList(fileid,filepath,filesize,filename,filelastModifiedDate,""+(trList.length+cont));
+
+}
+
+//添加已上传完成的文件到已完成列表中
+function addFileToLoadedList(fileid,filepath,filesize,filename,filelastModifiedDate,btnid){
+    let $list = $('#loadedfileList tbody');
+    let trid = filepath+"^"+fileid;
+    let fileSize = displayFileSize(filesize);
+    var lihtml = "<tr id='"+ trid +"' filePath='"+filepath+"' class='file-li'>" +
+        "<td data-label='文件名'>" +
+        "<div >" +
+        "<span style='overflow: hidden;'>"+filename+"</span>" +
+        "</div>" +
+        "</td>" +
+        "<td data-label='文件信息'>" +
+        "<div>" +
+        "<span>文件大小：</span>" +
+        "<span>"+fileSize+"</span>" +
+        "</div>" +
+        "<div class='text-muted'>" +
+        "<span>文件最后修改日：</span>" +
+        "<span>"+filelastModifiedDate+"</span>" +
+        "</div>" +
+        "</td>" +
+        "<td>" +
+        "<div>" +
+        "<span>文件已上传</span>" +
+        "</div>" +
+        "<div class='text-muted'>" +
+        "<span>"+filepath+"</span>" +
+        "</div>" +
+        "</td>" +
+        "<td>" +
+        "<div id='"+btnid+"^reUploadbtn_"+fileid+"' class='btn btn-purple' typeflag='cancel' filePath='"+filepath+"' style='margin-left:10px;width: 80px;' onclick='stopPropag(event);loadedToReUpload(this);'>" +
+        "重新上传" +
+        "</div>"+
+        "</td>" +
+        "</tr>";
+    let $li = $(lihtml);
+    $list.append($li);
+}
+
+function loadedToReUpload(obj){
+    let filepath = obj.filePath;
+    if(typeof filepath === 'undefined'){
+        filepath = "";
+    }
+    let fileid = findFileIdByDom(obj);
+    let trid = filepath+"^"+fileid;
+    let loadedtr = document.getElementById(trid);
+
+    loadedtr.parentNode.removeChild(loadedtr);
+    setfiledisplay(fileid,"");
+    renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),filepath);
+    document.getElementById("toUpBody").click();
+    uploader.upload(fileid);
+}
+
 //阻止冒泡
 function stopPropag(e){
     e.stopPropagation();
@@ -803,6 +886,9 @@ function timeout2fun(funsobj, delay) {
                                     break;
                                 case 5:
                                     fun(funObj.value1,funObj.value2,funObj.value3,funObj.value4);
+                                    break;
+                                case 6:
+                                    fun(funObj.value1,funObj.value2,funObj.value3,funObj.value4,funObj.value5);
                                     break;
                             }
                         }

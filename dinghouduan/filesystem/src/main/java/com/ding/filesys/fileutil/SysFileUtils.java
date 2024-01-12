@@ -30,6 +30,8 @@ import java.util.stream.Stream;
 
 public class SysFileUtils {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    private Md5Utiles md5Utiles = new Md5Utiles();
     //读取xml配置文件
     //DOM解析器来读取和解析XML文件
     public static Map redFileXml(){
@@ -284,7 +286,20 @@ public class SysFileUtils {
         boolean recode = false;
         String javaFilemd5 ="";
         try {
-            javaFilemd5 = Md5Utiles.getFileMD5(file);
+            javaFilemd5 = md5Utiles.getFileMD5(file);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        if(javaFilemd5.equals(jsmd5)){
+            return true;
+        }
+        return recode;
+    }
+    public boolean checkFileMd5ByFilePath(String filePath,String jsmd5){
+        boolean recode = false;
+        String javaFilemd5 ="";
+        try {
+            javaFilemd5 = md5Utiles.getFileMD5ByFilePath(filePath);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -598,8 +613,8 @@ public class SysFileUtils {
                 os.flush();
                 //tmpfile.delete();
             }
-            fos.close();
             os.close();
+            fos.close();
         } catch (InterruptedException e) {
             if(finalFile.exists()){
                 finalFile.delete();

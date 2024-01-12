@@ -112,6 +112,7 @@ public class FileServer {
         String chunkFilePath = fileUtils.getSaveFilePath(userid,"tmplocation");
         String configChunkFilePath = fileUtils.getConfigFilePath(userid,"tmplocation");
         String configFilePath = fileUtils.getConfigFilePath(userid,"location");
+        boolean isSameFile = false;
         int filechunks = Integer.parseInt(chunks);
         String recode = "";
         try {
@@ -123,8 +124,9 @@ public class FileServer {
                     recode = fileUtils.removeTmpFileAndTmpMes(filename,chunkFilePath,filechunks,filepath,configChunkFilePath);
                     if("500".equals(recode) || recode.startsWith("success_")){
                         //对比合并后的文件md5
-                        File mergeFile = new File(filePath,filename);
-                        if(!fileUtils.checkFileMd5(mergeFile,filemd5)){
+//                        File mergeFile = new File(filePath,filename);
+                        isSameFile = fileUtils.checkFileMd5ByFilePath(filePath+"\\"+filename,filemd5);
+                        if(!isSameFile){
                             return "400^上传的文件可能受损";
                         }else {
                             return "0^"+recode;
