@@ -181,12 +181,15 @@ public class LonginControl{
 
     @RequestMapping(value = "/downLoadFile", method = RequestMethod.GET)
     public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+
         String servicesName = request.getParameter("servicesName");
         String tokenValue = jumpTool.getTokenValue(request);
         String filepath= request.getParameter("filepath");
         String filename= request.getParameter("filename");
         String parameters = "uaa/downLoadFile?&servicesName="+servicesName+
                 "&user_satoken="+tokenValue+"&filepath="+filepath+"&filename="+filename;
-        return jumpTool.jumpPostReturnResponseEntity("uaa_satoken_server",false,parameters);
+        System.out.println("跳转参数:"+parameters);
+
+        return jumpTool.jumpGetReturnResponseEntity(request,"uaa_satoken_server",false,parameters);
     }
 }

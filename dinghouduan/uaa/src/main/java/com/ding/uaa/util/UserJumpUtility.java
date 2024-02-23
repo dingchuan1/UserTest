@@ -7,12 +7,19 @@ import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserJumpUtility {
@@ -62,8 +69,8 @@ public class UserJumpUtility {
         return retruncode;
     }
 
-    public ResponseEntity<InputStreamResource> jumpPostReturnResponseEntity(String servername, boolean ishttp, String parameters){
-        ResponseEntity<InputStreamResource> retruncode = null;
+    public InputStream jumpGetReturnResponseEntity(HttpServletRequest request,String servername, boolean ishttp, String parameters){
+        InputStream retruncode = null;
         //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
         //false为http，true为https
         InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
@@ -71,7 +78,23 @@ public class UserJumpUtility {
         String url = info.getHomePageUrl();
         System.out.println("跳转地址："+ url+parameters);
         //3、通过restTemplate访问
-        retruncode = restTemplate.postForObject(url + parameters, ResponseEntity.class);
+        // 从原始请求中复制所有头信息
+        HttpHeaders headers = new HttpHeaders();
+        List<String> headerNames = Collections.list(request.getHeaderNames());
+        for (String headerName : headerNames) {
+            headers.add(headerName,request.getHeader(headerName));
+        }
+        HttpEntity<HttpHeaders> entity = new HttpEntity<>(headers);
+        ResponseEntity<byte[]> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, byte[].class);
+//        retruncode = restTemplate.getForObject(url + parameters, InputStream.class);
+        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+            retruncode= new ByteArrayInputStream(responseEntity.getBody());
+        }
+        try {
+            retruncode.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return retruncode;
     }
 

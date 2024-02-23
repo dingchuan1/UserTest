@@ -797,7 +797,11 @@ function downloadFileById(obj){
     var secondsBeforeDownloading = 3;
     var fileId = findFileIdByDom(obj);
     var filePath = spliceroot(getDefaultFolderPath());
-    downloadFile("http://localhost:8080/downLoadFile?filepath="+"\\"+filePath+"\\"+"&filename="+fileId+"&servicesName=downLoadFile");
+    const serviceName = 'downLoadFile';
+    // 使用encodeURIComponent对文件名进行编码
+    const encodedFileName = encodeURIComponent(fileId);
+    const url = `http://localhost:8080/downLoadFile?filepath=${filePath}&filename=${encodedFileName}&serviceName=${serviceName}`;
+    downloadFile(url);
     // $.ajax({
     //     url: 'http://localhost:8080/downLoadFile',
     //     type: "get",

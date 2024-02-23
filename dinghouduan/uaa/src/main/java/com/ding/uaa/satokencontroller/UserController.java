@@ -16,8 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 @RestController
 @RequestMapping("/uaa")
@@ -214,18 +217,42 @@ public class UserController {
         String res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
         return res;
     }
-
-    @RequestMapping(value = "/downLoadFile",method = RequestMethod.POST)
-    public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+    //请注意，@RequestMapping 注解通常不会直接用于返回 InputStream。在大多数情况下，你会希望将文件数据写入 HttpServletResponse 的输出流中，而不是直接返回 InputStream。这是因为 InputStream 本身并不包含关于如何将其内容发送给客户端的信息，比如内容类型（Content-Type）或内容处置（Content-Disposition）。
+    @RequestMapping(value = "/downLoadFile",method = RequestMethod.GET)
+    public void downLoadFile(HttpServletRequest request, HttpServletResponse response){
         String servicesName = request.getParameter("servicesName");
         if(!jumpUtility.isAcesshasRole(servicesName)){
-            return null;
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return ;
         }
         String filepath= request.getParameter("filepath");
         String filename= request.getParameter("filename");
         String parameters = "filesys/downLoadFile?id="+StpUtil.getLoginId()
                 +"&filepath="+filepath+"&filename="+filename;
-        return jumpUtility.jumpPostReturnResponseEntity("filesys_server",false,parameters);
+
+        InputStream inputStream = jumpUtility.jumpGetReturnResponseEntity(request,"filesys_server",false,parameters);
+        if (inputStream == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        // 将 InputStream 写入响应
+        OutputStream outputStream = null;
+        try {
+            outputStream = response.getOutputStream();
+
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
+        }
+        outputStream.flush();
+        outputStream.close();
+        inputStream.close();
+        } catch (IOException e) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            e.printStackTrace();
+            return ;
+        }
     }
 
     // 全局异常拦截（拦截项目中的NotLoginException异常）

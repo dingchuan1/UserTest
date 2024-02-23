@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -139,11 +140,17 @@ public class FileController {
     }
 
     //在Spring MVC中实现断点续传功能，你需要处理HTTP的Range请求头，这样客户端就可以请求文件的特定部分。服务器然后根据这个范围发送文件的那部分数据。为了支持断点续传，客户端也需要发送有效的Range请求头。大多数现代浏览器在请求下载大文件时都会自动处理这一点。
-    @RequestMapping(value = "/downLoadFile",method = RequestMethod.POST)
-    public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+    //请注意，@RequestMapping 注解通常不会直接用于返回 InputStream。在大多数情况下，你会希望将文件数据写入 HttpServletResponse 的输出流中，而不是直接返回 InputStream。这是因为 InputStream 本身并不包含关于如何将其内容发送给客户端的信息，比如内容类型（Content-Type）或内容处置（Content-Disposition）。
+    @RequestMapping(value = "/downLoadFile",method = RequestMethod.GET)
+    public void downLoadFile(HttpServletRequest request, HttpServletResponse response){
         String filepath= request.getParameter("filepath");
         String filename= request.getParameter("filename");
         String userid = request.getParameter("id");
-        return fileServer.loadFileToResource(request,userid,filepath,filename);
+        String inputStream = fileServer.loadFileToResource(request,response,userid,filepath,filename);
+        if (inputStream == null || "".equals(inputStream)) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
     }
 }
