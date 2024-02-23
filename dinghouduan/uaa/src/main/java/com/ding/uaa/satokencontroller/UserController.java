@@ -9,7 +9,9 @@ import com.ding.uaa.util.UserJumpUtility;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -211,6 +213,19 @@ public class UserController {
                 +"&filepath="+filepath+"&filename="+filename;
         String res = jumpUtility.jumpGetreturnString("filesys_server",false,parameters);
         return res;
+    }
+
+    @RequestMapping(value = "/downLoadFile",method = RequestMethod.POST)
+    public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            return null;
+        }
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String parameters = "filesys/downLoadFile?id="+StpUtil.getLoginId()
+                +"&filepath="+filepath+"&filename="+filename;
+        return jumpUtility.jumpPostReturnResponseEntity("filesys_server",false,parameters);
     }
 
     // 全局异常拦截（拦截项目中的NotLoginException异常）

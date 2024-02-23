@@ -5,7 +5,9 @@ import com.ding.uaa.config.PermTable;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -57,6 +59,19 @@ public class UserJumpUtility {
         System.out.println("跳转地址："+ url);
         //3、通过restTemplate访问
         retruncode = restTemplate.postForObject(url + parameters,tmpfile, String.class);
+        return retruncode;
+    }
+
+    public ResponseEntity<InputStreamResource> jumpPostReturnResponseEntity(String servername, boolean ishttp, String parameters){
+        ResponseEntity<InputStreamResource> retruncode = null;
+        //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
+        //false为http，true为https
+        InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
+        //2、获取到要访问的地址
+        String url = info.getHomePageUrl();
+        System.out.println("跳转地址："+ url+parameters);
+        //3、通过restTemplate访问
+        retruncode = restTemplate.postForObject(url + parameters, ResponseEntity.class);
         return retruncode;
     }
 

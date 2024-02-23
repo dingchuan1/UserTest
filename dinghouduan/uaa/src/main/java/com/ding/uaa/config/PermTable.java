@@ -8,16 +8,21 @@ public class PermTable {
     private String[] permNames = new String[3];
     private String[] permKeys = new String[3];
 
-    private String[] RoleNames = new String[3];
-    private String[] RoleKeys = new String[3];
+    private String[] RoleNames = new String[4];
+    private String[] RoleKeys = new String[4];
 
     public PermTable(){
-        RoleNames[0] = "adminIndex";
         RoleKeys[0] = "admin";
+        RoleNames[0] = "adminIndex";
+
         RoleKeys[1] = "user";
         RoleNames[1] = "userindex";
+
         RoleKeys[2] = "admin";
         RoleNames[2] = "upLoadFile";
+
+        RoleKeys[3] = "admin";
+        RoleNames[3] = "downLoadFile";
     }
     public String getPermKey(String Name){
         String res = "";

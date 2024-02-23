@@ -5,6 +5,7 @@ import com.ding.tool.JumpTool;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -176,5 +177,16 @@ public class LonginControl{
                 "&user_satoken="+tokenValue+"&filepath="+filepath+"&filename="+filename;
         String res = jumpTool.jumpGetreturnString("uaa_satoken_server",false,parameters);
         return res;
+    }
+
+    @RequestMapping(value = "/downLoadFile", method = RequestMethod.GET)
+    public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+        String servicesName = request.getParameter("servicesName");
+        String tokenValue = jumpTool.getTokenValue(request);
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String parameters = "uaa/downLoadFile?&servicesName="+servicesName+
+                "&user_satoken="+tokenValue+"&filepath="+filepath+"&filename="+filename;
+        return jumpTool.jumpPostReturnResponseEntity("uaa_satoken_server",false,parameters);
     }
 }

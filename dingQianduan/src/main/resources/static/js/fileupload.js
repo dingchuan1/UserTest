@@ -770,7 +770,12 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
                             '<div class="col-6">' +
 
                             '</div>' +
-                            '<div class="col-2">' +
+                            '<div class="col-1">' +
+                                '<button id="downloadBtn_'+folder.name+'" type="button" onclick="downloadFileById(this);" class="list-group-item-actions btn-icon" >' +
+                                    '<img class="icon" src="../bootstrap-icons-1.11.1/cloud-download.svg" width="15" height="15" />' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="col-1">' +
                                 '<button id="removeBtn_'+folder.name+'" type="button" onclick="removeSerFileById(this);" class="list-group-item-actions btn-icon" >' +
                                     '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
                                 '</button>' +
@@ -787,6 +792,22 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
         }
     })
 }
+
+function downloadFileById(obj){
+    var secondsBeforeDownloading = 3;
+    var fileId = findFileIdByDom(obj);
+    var filePath = spliceroot(getDefaultFolderPath());
+    downloadFile("http://localhost:8080/downLoadFile?filepath="+"\\"+filePath+"\\"+"&filename="+fileId+"&servicesName=downLoadFile");
+    // $.ajax({
+    //     url: 'http://localhost:8080/downLoadFile',
+    //     type: "get",
+    //     data: {'filepath':"\\"+filePath+"\\",'filename':fileId,'servicesName':"downLoadFile"},
+    //     success: function (data) {
+    //         renderFileBrowser($('#fileBrowser'),$('#filebreadcrumb'),filePath);
+    //     }
+    // })
+}
+
 //变更导航文件夹栏
 function changemuneFolder(obj){
     var foldertext = $(obj).prevAll('li').addBack(obj).get().map(function(li) {

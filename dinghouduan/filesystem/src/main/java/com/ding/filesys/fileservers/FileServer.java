@@ -1,10 +1,19 @@
 package com.ding.filesys.fileservers;
 
 import com.ding.filesys.fileutil.SysFileUtils;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 
 @Service
 public class FileServer {
@@ -17,12 +26,12 @@ public class FileServer {
             201:该分片已存在
             200:该分片保存成功
      */
-    public String saveChunkFileService(String userId, byte[] file, int chunk, int chunks, String fileName, String filepath, String filemd5){
+    public String saveChunkFileService(String userId, byte[] files, int chunk, int chunks, String fileName, String filepath, String filemd5){
         String retruncode = "";
         File targeFile = null;
         String mesString = fileUtils.setFileMes(userId,filemd5,chunk,chunks,fileName,filepath,"tmplocation");
         if("0".equals(mesString)){
-            targeFile = fileUtils.saveChunkFile(file,chunk,fileName,userId,filepath);
+            targeFile = fileUtils.saveChunkFile(files,chunk,fileName,userId,filepath);
             if(fileUtils.checkFileMd5(targeFile,filemd5)){
                 retruncode = "200";
             }else{
@@ -143,6 +152,100 @@ public class FileServer {
         return recode;
     }
 
+    public String checkDownLoadFile(){
+
+        return "";
+    }
+    public ResponseEntity<InputStreamResource> loadFileToResource(HttpServletRequest request, String userid, String filepath, String filename){
+
+        String filePath = fileUtils.getSaveFilePath(userid,"location") + "\\"+filepath+"\\"+filename;
+
+        File file = new File(filePath);
+        if (!file.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        long fileLength = file.length();
+        RandomAccessFile randomAccessFile = null;
+        FileChannel fileChannel = null;
+
+        try {
+            randomAccessFile = new RandomAccessFile(file, "r");
+            fileChannel = randomAccessFile.getChannel();
+            FileInputStream finst = new FileInputStream(file);
+
+            // 处理Range请求头
+            String rangeHeader = request.getHeader("Range");
+            long start = 0;
+            long end = fileLength - 1;
+            if (rangeHeader != null) {
+                String[] ranges = rangeHeader.replaceFirst("bytes=", "").split("-");
+                if (ranges.length >= 1) {
+                    start = Long.parseLong(ranges[0]);
+                }
+                if (ranges.length >= 2) {
+                    end = Long.parseLong(ranges[1]);
+                }
+                if (start > end || start >= fileLength || end >= fileLength) {
+                    return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).build();
+                }
+            }
+            // 设置响应头
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"");
+            headers.add("Accept-Ranges", "bytes");
+            headers.add("Content-Range", "bytes " + start + "-" + end + "/" + fileLength);
+            headers.add("Content-Length", String.valueOf(end - start + 1));
+            headers.add("Content-Type", "application/octet-stream");
+
+            // 设置状态码
+            HttpStatus statusCode = (start == 0 && end == fileLength - 1) ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
+            // 定位到文件的开始位置
+            fileChannel.position(start);
+            // 创建InputStreamResource并返回
+            FileChannel finalFileChannel = fileChannel;
+            long finalEnd = end;
+            long finalStart = start;
+//            return new ResponseEntity<>(new InputStreamResource(finst) {
+//                @Override
+//                public int read() throws IOException{
+//                    ByteBuffer dst = ByteBuffer.allocate((int) (finalEnd- finalStart));
+//                    if (finalFileChannel.position() <= finalEnd) {
+//                        return finalFileChannel.read(dst);
+//                    } else {
+//                        return -1;
+//                    }
+//                }
+//            }, headers, statusCode);
+            ByteBuffer dst = ByteBuffer.allocate((int) (finalEnd- finalStart));
+            finalFileChannel.read(dst);
+            // 重置ByteBuffer的position为0，因为我们要从头开始读取数据
+            dst.flip();
+            // 将ByteBuffer转换为InputStream
+            InputStream inputStream = new ByteArrayInputStream(dst.array());
+            InputStreamResource res = new InputStreamResource(inputStream);
+            return new ResponseEntity<>(res,headers,statusCode);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }finally {
+            if (fileChannel != null) {
+                try {
+                    fileChannel.close();
+                } catch (IOException e) {
+                    // 忽略关闭异常
+                }
+            }
+            if (randomAccessFile != null) {
+                try {
+                    randomAccessFile.close();
+                } catch (IOException e) {
+                    // 忽略关闭异常
+                }
+            }
+        }
+
+    }
     public String readFolders(String userid,String folderspath){
         String data = fileUtils.readFoldersToBeanToString(folderspath,userid);
         return data;

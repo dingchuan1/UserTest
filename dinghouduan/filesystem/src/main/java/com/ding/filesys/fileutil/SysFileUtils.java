@@ -548,7 +548,7 @@ public class SysFileUtils {
     //获取用户剩余的空间大小
 
     //处理上传的分片文件
-    public File saveChunkFile(byte[] file,int chunk,String fileName,String userId,String filepath){
+    public File saveChunkFile(byte[] files,int chunk,String fileName,String userId,String filepath){
         String tmpfilePath = getSaveFilePath(userId,"tmplocation");
         String truetmpfilePath = removeStr(filepath);
         //检查tmp文件夹是否存在，不存在就创建
@@ -573,7 +573,7 @@ public class SysFileUtils {
             } else {
                 System.out.println("File already exists.");
             }
-            Files.write(Path.of(tmpfilePath + "/" + fileName + "_" + truetmpfilePath + "_" + chunk),file);
+            Files.write(Path.of(tmpfilePath + "/" + fileName + "_" + truetmpfilePath + "_" + chunk),files);
         } catch (IOException e) {
             if(tmpFile.exists()){
                 tmpFile.delete();

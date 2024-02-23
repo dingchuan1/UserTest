@@ -3,6 +3,9 @@ package com.ding.filesys.filecontroller;
 import com.ding.filesys.fileservers.FileServer;
 import com.ding.filesys.fileutil.SysFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -133,5 +136,14 @@ public class FileController {
         String userid = request.getParameter("id");
         String data = fileServer.removeFile(userid,filepath,filename);
         return data;
+    }
+
+    //在Spring MVC中实现断点续传功能，你需要处理HTTP的Range请求头，这样客户端就可以请求文件的特定部分。服务器然后根据这个范围发送文件的那部分数据。为了支持断点续传，客户端也需要发送有效的Range请求头。大多数现代浏览器在请求下载大文件时都会自动处理这一点。
+    @RequestMapping(value = "/downLoadFile",method = RequestMethod.POST)
+    public ResponseEntity<InputStreamResource> downLoadFile(HttpServletRequest request){
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String userid = request.getParameter("id");
+        return fileServer.loadFileToResource(request,userid,filepath,filename);
     }
 }
