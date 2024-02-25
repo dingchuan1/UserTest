@@ -10,6 +10,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -219,40 +220,41 @@ public class UserController {
     }
     //请注意，@RequestMapping 注解通常不会直接用于返回 InputStream。在大多数情况下，你会希望将文件数据写入 HttpServletResponse 的输出流中，而不是直接返回 InputStream。这是因为 InputStream 本身并不包含关于如何将其内容发送给客户端的信息，比如内容类型（Content-Type）或内容处置（Content-Disposition）。
     @RequestMapping(value = "/downLoadFile",method = RequestMethod.GET)
-    public void downLoadFile(HttpServletRequest request, HttpServletResponse response){
+    public ResponseEntity<Resource> downLoadFile(HttpServletRequest request, HttpServletResponse response){
         String servicesName = request.getParameter("servicesName");
         if(!jumpUtility.isAcesshasRole(servicesName)){
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return ;
+//            return null;
         }
         String filepath= request.getParameter("filepath");
         String filename= request.getParameter("filename");
         String parameters = "filesys/downLoadFile?id="+StpUtil.getLoginId()
                 +"&filepath="+filepath+"&filename="+filename;
 
-        InputStream inputStream = jumpUtility.jumpGetReturnResponseEntity(request,"filesys_server",false,parameters);
-        if (inputStream == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        // 将 InputStream 写入响应
-        OutputStream outputStream = null;
-        try {
-            outputStream = response.getOutputStream();
-
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
-        }
-        outputStream.flush();
-        outputStream.close();
-        inputStream.close();
-        } catch (IOException e) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            e.printStackTrace();
-            return ;
-        }
+        return jumpUtility.jumpGetReturnResponseEntityTest(request,"filesys_server",false,parameters);
+//        if (responseEntity != null) {
+//            return responseEntity;
+//        }
+//        // 将 InputStream 写入响应
+//        OutputStream outputStream = null;
+//        try {
+//            outputStream = response.getOutputStream();
+//
+//        byte[] buffer = new byte[4096];
+//        int bytesRead;
+//        while ((bytesRead = inputStream.read(buffer)) != -1) {
+//            outputStream.write(buffer, 0, bytesRead);
+//        }
+//        outputStream.flush();
+//        outputStream.close();
+//        inputStream.close();
+//        } catch (IOException e) {
+//            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+//            e.printStackTrace();
+//            return ;
+//        }
+//        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+//        return null;
     }
 
     // 全局异常拦截（拦截项目中的NotLoginException异常）

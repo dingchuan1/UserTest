@@ -40,6 +40,33 @@ public class MyInterceptor implements HandlerInterceptor {
                 break;
             }
         }
+        // 获取完整的请求URL
+        String requestURL = request.getRequestURL().toString();
+
+        // 获取请求的协议
+        String protocol = request.getScheme();
+
+        // 获取服务器名称
+        String serverName = request.getServerName();
+
+        // 获取服务器端口号
+        int serverPort = request.getServerPort();
+
+        // 获取请求的上下文路径
+        String contextPath = request.getContextPath();
+
+        // 获取请求的Servlet路径
+        String servletPath = request.getServletPath();
+
+        // 获取请求的路径信息
+        String pathInfo = request.getPathInfo();
+
+        // 获取查询字符串
+        String queryString = request.getQueryString();
+
+        // 你可以根据需要组合这些信息来获取你想要的URL
+        String fullURL = protocol + "://" + serverName + ":" + serverPort + contextPath + servletPath + pathInfo + "?" + queryString;
+
         String servicesName = request.getParameter("servicesName");
         if("".equals(tokenValue) || tokenValue==null || "".equals(servicesName) || servicesName==null){
             //request.getRequestDispatcher("/denglu.html").forward(request,response);

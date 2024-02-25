@@ -800,7 +800,7 @@ function downloadFileById(obj){
     const serviceName = 'downLoadFile';
     // 使用encodeURIComponent对文件名进行编码
     const encodedFileName = encodeURIComponent(fileId);
-    const url = `http://localhost:8080/downLoadFile?filepath=${filePath}&filename=${encodedFileName}&serviceName=${serviceName}`;
+    const url = `http://localhost:8080/downLoadFile?servicesName=${serviceName}&filepath=${filePath}&filename=${encodedFileName}`;
     downloadFile(url);
     // $.ajax({
     //     url: 'http://localhost:8080/downLoadFile',

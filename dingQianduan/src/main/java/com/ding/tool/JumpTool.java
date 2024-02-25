@@ -4,6 +4,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -76,39 +77,47 @@ public class JumpTool {
 //        retrunin = restTemplate.getForObject(url + parameters, InputStream.class);
 //        RestTemplate restTemplate = new RestTemplate();
 
-        String rangeHeader = request.getHeader("Range");
-        long start = 0;
-        long end = 0;
-        if (rangeHeader != null) {
-            String[] ranges = rangeHeader.replaceFirst("bytes=", "").split("-");
-            if (ranges.length >= 1) {
-                start = Long.parseLong(ranges[0]);
-            }
-            if (ranges.length >= 2) {
-                end = Long.parseLong(ranges[1]);
-            }
-        }
+//        String rangeHeader = request.getHeader("Range");
+//        long start = 0;
+//        long end = 0;
+//        if (rangeHeader != null) {
+//            String[] ranges = rangeHeader.replaceFirst("bytes=", "").split("-");
+//            if (ranges.length >= 1) {
+//                start = Long.parseLong(ranges[0]);
+//            }
+//            if (ranges.length >= 2) {
+//                end = Long.parseLong(ranges[1]);
+//            }
+//        }
         HttpHeaders headers = new HttpHeaders();
-        // 从原始请求中复制所有头信息
-        List<String> headerNames = Collections.list(request.getHeaderNames());
-        for (String headerName : headerNames) {
-            headers.add(headerName,request.getHeader(headerName));
-        }
-        if(end != 0){
-            String rangeHeaderValue = "bytes=" + start + "-" + end;
-            headers.add("Range", rangeHeaderValue);
-        }
+//        // 从原始请求中复制所有头信息
+//        List<String> headerNames = Collections.list(request.getHeaderNames());
+//        for (String headerName : headerNames) {
+//            headers.add(headerName,request.getHeader(headerName));
+//        }
+//        if(end != 0){
+//            String rangeHeaderValue = "bytes=" + start + "-" + end;
+//            headers.add("Range", rangeHeaderValue);
+//        }
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_OCTET_STREAM));
         HttpEntity<HttpHeaders> entity = new HttpEntity<>(headers);
-        ResponseEntity<byte[]> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, byte[].class);
-        if (responseEntity.getStatusCode().is2xxSuccessful()) {
-            retrunin= new ByteArrayInputStream(responseEntity.getBody());
-        }else{
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        ResponseEntity<Resource> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, Resource.class);
+        InputStream  resint = null;
+        InputStreamResource res = null;
+        try {
+            resint = responseEntity.getBody().getInputStream();
+            res = new InputStreamResource(resint);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+//        if (responseEntity.getStatusCode().is2xxSuccessful()) {
+//            retrunin= new ByteArrayInputStream(responseEntity.getBody());
+//        }else{
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
         HttpHeaders responseHeaders = responseEntity.getHeaders();
-
-        InputStreamResource res = new InputStreamResource(retrunin);
+//
+//        InputStreamResource res = new InputStreamResource(retrunin);
         String contentType = null;
         try {
             contentType = request.getServletContext().getMimeType(res.getFile().getAbsolutePath());
@@ -118,11 +127,11 @@ public class JumpTool {
         if(contentType == null) {
             contentType = "application/octet-stream";
         }
-        try {
-            retrunin.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            retrunin.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(String.valueOf(responseHeaders))

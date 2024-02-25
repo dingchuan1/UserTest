@@ -6,6 +6,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -69,7 +70,7 @@ public class UserJumpUtility {
         return retruncode;
     }
 
-    public InputStream jumpGetReturnResponseEntity(HttpServletRequest request,String servername, boolean ishttp, String parameters){
+    public ResponseEntity<byte[]> jumpGetReturnResponseEntity(HttpServletRequest request,String servername, boolean ishttp, String parameters){
         InputStream retruncode = null;
         //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
         //false为http，true为https
@@ -86,16 +87,36 @@ public class UserJumpUtility {
         }
         HttpEntity<HttpHeaders> entity = new HttpEntity<>(headers);
         ResponseEntity<byte[]> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, byte[].class);
+
 //        retruncode = restTemplate.getForObject(url + parameters, InputStream.class);
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
-            retruncode= new ByteArrayInputStream(responseEntity.getBody());
+            return responseEntity;
         }
-        try {
-            retruncode.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+//        try {
+//            retruncode.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+        return null;
+    }
+
+    public ResponseEntity<Resource> jumpGetReturnResponseEntityTest(HttpServletRequest request,String servername, boolean ishttp, String parameters){
+        //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
+        //false为http，true为https
+        InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
+        //2、获取到要访问的地址
+        String url = info.getHomePageUrl();
+        System.out.println("跳转地址："+ url+parameters);
+        //3、通过restTemplate访问
+        // 从原始请求中复制所有头信息
+        HttpHeaders headers = new HttpHeaders();
+        List<String> headerNames = Collections.list(request.getHeaderNames());
+        for (String headerName : headerNames) {
+            headers.add(headerName,request.getHeader(headerName));
         }
-        return retruncode;
+        HttpEntity<HttpHeaders> entity = new HttpEntity<>(headers);
+        ResponseEntity<Resource> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, Resource.class);
+        return responseEntity;
     }
 
     public boolean isAcesshasRole(String servicesName){
