@@ -22,7 +22,7 @@ WebUploader.Uploader.register({
 },{
     beforeSendFile:function(file){
 
-        var defluatfilepath = getDefaultFolderPath();
+        let defluatfilepath = getDefaultFolderPath();
         defluatfilepath = spliceroot(defluatfilepath);
         //Deferred()对象在钩子回掉函数中经常要用到，用来处理需要等待的异步操作。
         var task = WebUploader.Base.Deferred();
@@ -41,11 +41,15 @@ WebUploader.Uploader.register({
             $('#progressBar_text_'+ file.id).text('文件读取完成');
             $('#progressBar_text_'+ file.id).css('color','white');
             $('#readfiletext_'+ file.id).text('文件读取完成');
-            var timeoutFuns = {
-                fun1 : {funname:'settimeoutNoDisplayDot',value1:'progress_'+ file.id,value2:'delbtn_'+ file.id},
-                fun2 : {funname : 'settimeoutChangeText',value1 : 'readfiletext_'+ file.id,value2 : '上传中...'},
-                fun3 : {funname : 'settimeoutInlineBlockDisplayDot',value1 : 'cancelbtn_'+ file.id,value2:'stopupbtn_'+ file.id}
-            }
+            const timeoutFuns = {
+                fun1: {funname: 'settimeoutNoDisplayDot', value1: 'progress_' + file.id, value2: 'delbtn_' + file.id},
+                fun2: {funname: 'settimeoutChangeText', value1: 'readfiletext_' + file.id, value2: '上传中...'},
+                fun3: {
+                    funname: 'settimeoutInlineBlockDisplayDot',
+                    value1: 'cancelbtn_' + file.id,
+                    value2: 'stopupbtn_' + file.id
+                }
+            };
             timeout2fun(timeoutFuns,3000);
             //这里通过ajax和后台通信根据md5的信息来判断，可实现断点续传
             $.ajax({
@@ -82,12 +86,12 @@ WebUploader.Uploader.register({
     },
     beforeSend:function(block){
         console.log("beforeSend");
-        var file=block.file;
+        let file = block.file;
 
-        var defluatfilepath = getDefaultFolderPath();
+        let defluatfilepath = getDefaultFolderPath();
         defluatfilepath = spliceroot(defluatfilepath);
         file.chunks = block.chunks;
-        var task = WebUploader.Base.Deferred();
+        let task = WebUploader.Base.Deferred();
         uploader.md5File(file,block.start,block.end).progress(percentage => {
             console.log("percentage="+percentage * 100);
         }).then(function (fileMd5){
@@ -597,6 +601,11 @@ function removeSerFileById(obj){
    })
 }
 
+function playVideoById(obj){
+    var fileId = findFileIdByDom(obj);
+    var filePath = spliceroot(getDefaultFolderPath());
+    playVideo(fileId,filePath);
+}
 
 function findFileIdByDom(t){
     // 获取元素的ID
@@ -761,26 +770,55 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
                         folder.name + '</a></div></div>');
                     //li.on('click', changeFolder(this));
                 } else {
-                    li = $('<div class="list-group-item" style="padding:5px 20px;height: 30px;">' +
-                        '<div class="row align-items-center">' +
+                    if(checkVideoType(folder.name)){
+                        li = $('<div class="list-group-item" style="padding:5px 20px;height: 30px;">' +
+                            '<div class="row align-items-center">' +
                             '<div class="col-auto">' +
-                                '<input className="form-check-input me-1" type="checkbox" value="" id="checkbox_'+folder.name+'">' +
-                                '<label className="form-check-label" htmlFor="checkbox_'+folder.name+'">'+folder.name+'</label>' +
+                            '<input className="form-check-input me-1" type="checkbox" value="" id="checkbox_'+folder.name+'">' +
+                            '<label className="form-check-label" htmlFor="checkbox_'+folder.name+'">'+folder.name+'</label>' +
+                            '</div>' +
+                            '<div class="col-5">' +
+
+                            '</div>' +
+                            '<div class="col-1">' +
+                            '<button id="downloadBtn_'+folder.name+'" type="button" onclick="downloadFileById(this);" class="list-group-item-actions btn-icon" >' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/cloud-download.svg" width="15" height="15" />' +
+                            '</button>' +
+                            '</div>' +
+                            '<div class="col-1">' +
+                            '<button id="removeBtn_'+folder.name+'" type="button" onclick="removeSerFileById(this);" class="list-group-item-actions btn-icon" >' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
+                            '</button>' +
+                            '</div>' +
+                            '<div class="col-1">' +
+                            '<button id="playBtn_'+folder.name+'" type="button" onclick="playVideoById(this);" class="list-group-item-actions btn-icon" >' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
+                            '</button>' +
+                            '</div>' +
+                            '</div></div>');
+                    }else {
+                        li = $('<div class="list-group-item" style="padding:5px 20px;height: 30px;">' +
+                            '<div class="row align-items-center">' +
+                            '<div class="col-auto">' +
+                            '<input className="form-check-input me-1" type="checkbox" value="" id="checkbox_'+folder.name+'">' +
+                            '<label className="form-check-label" htmlFor="checkbox_'+folder.name+'">'+folder.name+'</label>' +
                             '</div>' +
                             '<div class="col-6">' +
 
                             '</div>' +
                             '<div class="col-1">' +
-                                '<button id="downloadBtn_'+folder.name+'" type="button" onclick="downloadFileById(this);" class="list-group-item-actions btn-icon" >' +
-                                    '<img class="icon" src="../bootstrap-icons-1.11.1/cloud-download.svg" width="15" height="15" />' +
-                                '</button>' +
+                            '<button id="downloadBtn_'+folder.name+'" type="button" onclick="downloadFileById(this);" class="list-group-item-actions btn-icon" >' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/cloud-download.svg" width="15" height="15" />' +
+                            '</button>' +
                             '</div>' +
                             '<div class="col-1">' +
-                                '<button id="removeBtn_'+folder.name+'" type="button" onclick="removeSerFileById(this);" class="list-group-item-actions btn-icon" >' +
-                                    '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
-                                '</button>' +
+                            '<button id="removeBtn_'+folder.name+'" type="button" onclick="removeSerFileById(this);" class="list-group-item-actions btn-icon" >' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
+                            '</button>' +
                             '</div>' +
-                        '</div></div>');
+                            '</div></div>');
+                    }
+
                 }
                 ul.append(li);
             });

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>视频播放</title>
+
+    <link rel="stylesheet" href="js/video-js-8.10.0/video-js.min.css">
+    <script src="js/video-js-8.10.0/video.min.js"></script>
+    <script>
+
+    </script>
+</head>
+<body onload="onLoad()">
+<div class="container-xl">
+    <!-- 主导航栏 -->
+    <div class="row row-cards align-items-start">
+
+    </div>
+    <!-- 视频标题 -->
+    <div class="row row-cards">
+        <div class="col-md-12">
+            <h1 id="playVideoName"></h1>
+        </div>
+    </div>
+    <!-- 视频部分 -->
+    <div class="row row-cards">
+        <div class="col-md-12">
+            <div id="playDiv">
+                <!-- poster属性用于指定一个图像的URL，该图像将在视频播放之前显示，通常作为视频的封面或预览图。当用户尚未播放视频时，poster图像会出现在视频播放器的位置上，提供一种视觉上的提示，告诉用户这里有一个视频内容。 -->
+                <!-- <track>元素用于在视频中添加文本轨道，通常是字幕或标题。文本轨道（WebVTT格式）允许你提供与视频内容同步的文本，这对于听力受损的观众或者需要不同语言字幕的观众非常有用。 -->
+                <video id="playVideoById" class="video-js" controls preload="none" width="640" height="360"
+                       data-setup='{ "html5" : { "nativeTextTracks" : false } }'>
+
+                    <p class="vjs-no-js">
+                        为了播放这个视频，你需要启用JavaScript，并使用一个支持HTML5视频和<a href="https://videojs.com/html5-video-support/" target="_blank">video.js</a>的浏览器。
+                    </p>
+                </video>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    // 确保DOM已加载完毕
+    var player = videojs('playVideoById');
+</script>
+</html>
