@@ -792,7 +792,7 @@ function renderFileBrowser(fileBrowser,filebreadcrumb,folderspath){
                             '</div>' +
                             '<div class="col-1">' +
                             '<button id="playBtn_'+folder.name+'" type="button" onclick="playVideoById(this);" class="list-group-item-actions btn-icon" >' +
-                            '<img class="icon" src="../bootstrap-icons-1.11.1/trash-fill.svg" width="15" height="15" />' +
+                            '<img class="icon" src="../bootstrap-icons-1.11.1/play-btn-fill.svg" width="15" height="15" />' +
                             '</button>' +
                             '</div>' +
                             '</div></div>');

@@ -138,6 +138,53 @@ public class JumpTool {
                 .body(res);
     }
 
+
+    public ResponseEntity<Resource> jumpGetReturnResponseEntityWithPlayVideo(HttpServletRequest request,String servername, boolean ishttp, String parameters){
+
+
+        //1、通过eurekaClient获取uaa_satoken_server验证服务的信息
+        //false为http，true为https
+        InstanceInfo info = eurekaClient.getNextServerFromEureka(servername, ishttp);
+        //2、获取到要访问的地址
+        String url = info.getHomePageUrl();
+        System.out.println("跳转地址："+ url+",,跳转参数:"+parameters);
+        //3、通过restTemplate访问
+        //在使用 RestTemplate 的 getForObject 方法时，如果你想要同时获取响应体和响应头，getForObject 方法本身并不直接支持这一点，因为它主要是为了简化操作，只返回响应体。要获取响应头，你需要使用更底层的 RestTemplate 方法，比如 execute，它允许你完全控制 HTTP 请求和响应的处理。
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_OCTET_STREAM));
+        HttpEntity<HttpHeaders> entity = new HttpEntity<>(headers);
+        ResponseEntity<Resource> responseEntity = restTemplate.exchange(url + parameters, HttpMethod.GET, entity, Resource.class);
+        InputStream  resint = null;
+        InputStreamResource res = null;
+        try {
+            resint = responseEntity.getBody().getInputStream();
+            res = new InputStreamResource(resint);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        HttpHeaders responseHeaders = responseEntity.getHeaders();
+
+        String contentType = null;
+        try {
+            //contentType = request.getServletContext().getMimeType(res.getFile().getAbsolutePath());
+            contentType = getContentType(res.getFile().getName());
+        } catch (IOException ex) {
+
+        }
+
+
+        if(contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(String.valueOf(responseHeaders))
+                .body(res);
+    }
     public String getTokenValue(HttpServletRequest req){
         Cookie[] cookies = req.getCookies();
         String tokenValue = "";
@@ -149,6 +196,25 @@ public class JumpTool {
         }
         return tokenValue;
     }
-
+    private String getContentType(String filename) {
+        // 根据文件扩展名返回Content-Type
+        if (filename.endsWith(".mp4")) {
+            return "video/mp4";
+        } else if (filename.endsWith(".webm")) {
+            return "video/webm";
+        } else if (filename.endsWith(".ogg")) {
+            return "video/ogg";
+        }else if (filename.endsWith(".ogv")) {
+            return "video/ogv";
+        }else if (filename.endsWith(".avi")) {
+            return "video/avi";
+        }else if (filename.endsWith(".mkv")) {
+            return "video/mkv";
+        }else if (filename.endsWith(".mov")) {
+            return "video/mov";
+        }
+        // 添加更多文件类型支持...
+        return "application/octet-stream"; // 默认类型
+    }
 
 }

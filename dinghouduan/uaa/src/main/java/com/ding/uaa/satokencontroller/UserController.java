@@ -257,6 +257,21 @@ public class UserController {
 //        return null;
     }
 
+    @RequestMapping(value = "/playVideo",method = RequestMethod.GET)
+    public ResponseEntity<Resource> playVideoFile(HttpServletRequest request, HttpServletResponse response){
+        String servicesName = request.getParameter("servicesName");
+        if(!jumpUtility.isAcesshasRole(servicesName)){
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+//            return null;
+        }
+        String filepath= request.getParameter("filepath");
+        String filename= request.getParameter("filename");
+        String parameters = "filesys/downLoadFile?id="+StpUtil.getLoginId()
+                +"&filepath="+filepath+"&filename="+filename;
+
+        return jumpUtility.jumpGetReturnResponseEntityTest(request,"filesys_server",false,parameters);
+    }
+
     // 全局异常拦截（拦截项目中的NotLoginException异常）
     @ExceptionHandler(NotLoginException.class)
     public SaResult handlerNotLoginException(NotLoginException nle)

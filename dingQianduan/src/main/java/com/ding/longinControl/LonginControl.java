@@ -6,11 +6,9 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -68,7 +66,7 @@ public class LonginControl{
         String end= request.getParameter("end");
         String chunk= request.getParameter("chunk");
         String chunks= request.getParameter("chunks");
-        String tmpfilepath = "E:\\\\DCLoginTmp\\"+filename+"_"+chunk;
+        String tmpfilepath = "D:\\\\DCLoginTmp\\"+filename+"_"+chunk;
         byte[] tmpFile = fileTool.multipartFileToFileToBytes(tmpfilepath,file);
         String parameters = "uaa/addFile?filename="+filename+"&start="+start+"&end="+end+"&chunk="+chunk+"&chunks="+chunks+"&servicesName="+servicesName+
                 "&user_satoken="+tokenValue+"&filemd5Value="+filemd5Value+"&blockmd5Value="+blockmd5Value+"&filepath="+filepath;
@@ -191,5 +189,19 @@ public class LonginControl{
         System.out.println("跳转参数:"+parameters);
 
         return jumpTool.jumpGetReturnResponseEntity(request,"uaa_satoken_server",false,parameters);
+    }
+
+    @GetMapping(value = "/playVideo/{filename:.+}")
+    public ResponseEntity<Resource> playVideoFile(@PathVariable String filename,HttpServletRequest request){
+
+        String servicesName = request.getParameter("servicesName");
+        String tokenValue = jumpTool.getTokenValue(request);
+        String filepath= request.getParameter("videoPath");
+//        String filename= request.getParameter("filename");
+        String parameters = "uaa/playVideo?&servicesName="+servicesName+
+                "&user_satoken="+tokenValue+"&filepath="+filepath+"&filename="+filename;
+        System.out.println("跳转参数:"+parameters);
+
+        return jumpTool.jumpGetReturnResponseEntityWithPlayVideo(request,"uaa_satoken_server",false,parameters);
     }
 }

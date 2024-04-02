@@ -1,4 +1,4 @@
-var videoTypes = ["mp4","webm","ogg","ogv","avi","mkv"];
+var videoTypes = ["mp4","webm","ogg","ogv","avi","mkv","mov"];
 
 function checkVideoType(filename){
 
@@ -36,14 +36,15 @@ function onLoad(){
     // 获取查询字符串
     const parameters = parseQueryString();
     if(parameters.videoName != ""){
-        let videoUrl = "http://localhost:8080/playVideo?servicesName=playVideo&videoName="+parameters.videoName+"&videoPath="+parameters.videoPath;
+        //let videoUrl = "http://localhost:8080/playVideo?servicesName=playVideo&videoName="+parameters.videoName+"&videoPath="+parameters.videoPath;
+        let videoUrl = "http://localhost:8080/playVideo/"+ parameters.videoName + "?servicesName=playVideo&videoPath="+parameters.videoPath;
         addVideoSource(videoUrl);
     }
 
 }
 
 function addVideoSource(videoUrl){
-    let parentElement = document.getElementById('playVideoById');
+    let parentElement = document.getElementById('playVideoById_html5_api');
     let referenceElement = parentElement.childNodes[0]; // 获取参考元素
     for (var i = 0; i < videoTypes.length; i++) {
         let newElement = document.createElement('source');
@@ -51,5 +52,18 @@ function addVideoSource(videoUrl){
         newElement.type = "video/"+videoTypes[i];
         parentElement.insertBefore(newElement, referenceElement);
     }
+    setTimeout(function(videoElement) {
+        if (videoElement) {
+            // 这里可以检查videoElement确实是一个video元素
+            if (videoElement.tagName.toLowerCase() === 'video') {
+                videoElement.load(); // 重新加载视频资源
+                console.log('Video reloaded');
+            } else {
+                console.error('The element is not a video element');
+            }
+        } else {
+            console.error('Video element not found');
+        }
+    }, 200,parentElement);
 
 }
